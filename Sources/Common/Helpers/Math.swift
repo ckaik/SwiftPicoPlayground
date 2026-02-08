@@ -1,5 +1,5 @@
 import CMath
 
-func pow(_ base: Float, _ exponent: Float) -> Float {
+public func pow(_ base: Float, _ exponent: Float) -> Float {
   powf(base, exponent)
 }
