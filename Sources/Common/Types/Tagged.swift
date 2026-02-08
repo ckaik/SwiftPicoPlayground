@@ -1,6 +1,6 @@
-// A copy of the `Tagged` type from `swift-tagged` by pointfreeco, 
+// A copy of the `Tagged` type from `swift-tagged` by pointfreeco
 // with some modifications to make it work on embedded platforms,
-// once/if the package is updated to support embedded platforms, 
+// once/if the package is updated to support embedded platforms,
 // the package can be used directly
 
 @dynamicMemberLookup
