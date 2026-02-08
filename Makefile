@@ -1,4 +1,12 @@
-format:
-	swift-format format --in-place --recursive Package.swift Sources/**/*.swift
+default: hooks
 
-.PHONY: format
+hooks:
+	git config core.hooksPath .githooks
+
+format:
+	swift-format format --in-place --recursive Package.swift Sources/
+
+lint:
+	swift-format lint --recursive Package.swift Sources/
+
+.PHONY: format lint hooks default

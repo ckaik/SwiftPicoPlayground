@@ -35,6 +35,7 @@ fi
     "$@" \
     --dump-prep-script "$PREPARATION_SCRIPT_PATH" \
     --allow-writing-to-package-directory \
+    --disable-vscode-settings \
     --allow-network-connections all  # Used to download PicoSDK, toolchain and other dependencies.
 
 # The preparation script is dumped to PREPARATION_SCRIPT_PATH so it can be inspected.
