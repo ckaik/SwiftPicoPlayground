@@ -1,4 +1,3 @@
-import CPicoSDK
 import Common
 
 @main
@@ -19,15 +18,13 @@ struct App {
     let pin = Pin(number: 17)
     pin.turn(on: true)
 
-    let red = Pin(number: 13)
-    // red.pwm(Effects.fade())
+    let rgb = RGBLed(
+      redPin: Pin(number: 13),
+      greenPin: Pin(number: 14),
+      bluePin: Pin(number: 15)
+    )
 
-    let green = Pin(number: 14)
-    // green.turn(on: true)
-    green.pwm(.on(at: 0.5))
-
-    let blue = Pin(number: 15)
-    // blue.pwm(Effects.fade(goingUp: false))
+    rgb.set(Color(red: 1.0, green: 1, blue: 1))
 
     var value = false
 
