@@ -16,14 +16,18 @@ struct App {
       throw .cyw43InitializationFailed(error)
     }
 
+    let pin = Pin(number: 17)
+    pin.turn(on: true)
+
     let red = Pin(number: 13)
-    red.pwm(Effects.fade())
+    // red.pwm(Effects.fade())
 
     let green = Pin(number: 14)
-    green.turn(on: true)
+    // green.turn(on: true)
+    green.pwm(.on(at: 0.5))
 
     let blue = Pin(number: 15)
-    blue.pwm(Effects.fade(goingUp: false))
+    // blue.pwm(Effects.fade(goingUp: false))
 
     var value = false
 

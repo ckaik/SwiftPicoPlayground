@@ -29,7 +29,8 @@ let package = Package(
         "Common",
       ]
     ),
-    .target(name: "Common", dependencies: ["CPicoSDK"]),
+    .target(name: "Common", dependencies: ["CPicoSDK", "CMath"]),
+    .target(name: "CMath"),
   ],
   swiftLanguageModes: [.v5]
 )

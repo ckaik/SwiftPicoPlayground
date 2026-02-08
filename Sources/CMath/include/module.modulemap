@@ -1,0 +1,4 @@
+module CMath {
+  header "CMath.h"
+  export *
+}

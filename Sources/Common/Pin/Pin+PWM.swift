@@ -1,7 +1,7 @@
 import CPicoSDK
 
 extension Pin {
-  public func pwm(_ level: @escaping (_ pin: PinID) -> UInt16) {
+  public func pwm(_ effect: some PWMEffect) {
     guard !pwmIsRunning else { return }
     pwmIsRunning = true
 
@@ -12,6 +12,6 @@ extension Pin {
     pwm_config_set_clkdiv(&config, 4)
     pwm_init(slice, &config, true)
 
-    PWMInterruptRegistry.shared.register(pin: id, computeLevel: level)
+    PWMInterruptRegistry.shared.register(pin: id, computeLevel: effect.level)
   }
 }
