@@ -10,8 +10,8 @@ public final class RGBLed {
   }
 
   public func set(_ color: Color) {
-    redPin.pwm(.on(at: color.red))
-    greenPin.pwm(.on(at: color.green))
-    bluePin.pwm(.on(at: color.blue))
+    redPin.pwm(.on(at: color.red), config: PWMConfig(frequencyHz: 1000, wrap: UInt16.max))
+    greenPin.pwm(.on(at: color.green), config: PWMConfig(frequencyHz: 1000, wrap: UInt16.max))
+    bluePin.pwm(.on(at: color.blue), config: PWMConfig(frequencyHz: 1000, wrap: UInt16.max))
   }
 }

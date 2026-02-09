@@ -5,11 +5,11 @@ public struct ConstantEffect: PWMEffect {
   let level: UInt16
 
   init(@Clamped brightness: Float) {
-    level = UInt16(pow(brightness, 2) * 255)
+    level = UInt16(pow(brightness, 2) * Float(UInt16.max))
   }
 
-  public func level(for pin: PinID) -> UInt16 {
-    level
+  public mutating func level(for pin: PinID, wrap: UInt16, onWrap wrapCount: UInt32) -> UInt16 {
+    min(level, wrap)
   }
 }
 

@@ -9,29 +9,26 @@ struct App {
   static func main() throws(AppError) {
     stdio_init_all()
 
-    do {
-      try Cyw43Manager.shared.initialize()
-    } catch {
-      throw .cyw43InitializationFailed(error)
-    }
+    let redPin = Pin(number: 15)
+    let bluePin = Pin(number: 16)
+    let config = PWMConfig(frequencyHz: 1000, wrap: 4095)
+    let tickMs: Float = 10
+    let cycleMs: Float = 2 * 60 + 40 + 200
 
-    let pin = Pin(number: 17)
-    pin.turn(on: true)
-
-    let rgb = RGBLed(
-      redPin: Pin(number: 13),
-      greenPin: Pin(number: 14),
-      bluePin: Pin(number: 15)
+    let redEffect = PoliceFlashEffect(
+      tickMs: tickMs,
+      offsetMs: 0
+    )
+    let blueEffect = PoliceFlashEffect(
+      tickMs: tickMs,
+      offsetMs: cycleMs / 2
     )
 
-    rgb.set(Color(red: 1.0, green: 1, blue: 1))
-
-    var value = false
+    redPin.pwm(redEffect, config: config, tickMs: tickMs)
+    bluePin.pwm(blueEffect, config: config, tickMs: tickMs)
 
     while true {
-      Cyw43Manager.shared[.led] = value
-      value.toggle()
-      sleep_ms(1000)
+      tight_loop_contents()
     }
   }
 }

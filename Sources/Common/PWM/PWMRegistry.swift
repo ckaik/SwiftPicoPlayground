@@ -3,29 +3,39 @@ import CPicoSDK
 // This whole file is a workaround for the fact that Swift doesn't allow capturing any context when
 // passing a Swift closure as a C function pointer.
 
-typealias PWMLevelComputation = (PinID) -> UInt16
+typealias PWMLevelComputation = (PinID, UInt16, UInt32) -> UInt16
 
 private typealias SliceHandlers = [PinID: PWMLevelComputation]
 
 extension SliceHandlers {
-  func drive() {
+  func drive(wrap: UInt16, wrapCount: UInt32) {
     for (pin, computeLevel) in self {
-      pwm_set_gpio_level(pin.rawValue, computeLevel(pin))
+      pwm_set_gpio_level(pin.rawValue, computeLevel(pin, wrap, wrapCount))
     }
   }
 }
 
 class PWMInterruptRegistry {
   private var handlers: [SliceID: SliceHandlers] = [:]
+  private var sliceWraps: [SliceID: UInt16] = [:]
+  private var wrapCounts: [SliceID: UInt32] = [:]
   private var isConfigured = false
 
   private init() {}
 
   static let shared = PWMInterruptRegistry()
 
-  func register(pin: PinID, computeLevel: @escaping PWMLevelComputation) {
+  func register(
+    pin: PinID,
+    wrap: UInt16,
+    computeLevel: @escaping PWMLevelComputation
+  ) -> Bool {
     let slice = pwm_gpio_to_slice_num(pin.rawValue)
     let sliceID = SliceID(rawValue: slice)
+    if let existingWrap = sliceWraps[sliceID], existingWrap != wrap {
+      return false
+    }
+    sliceWraps[sliceID] = wrap
     var pinHandlers = handlers[sliceID] ?? [:]
     pinHandlers[pin] = computeLevel
     handlers[sliceID] = pinHandlers
@@ -33,6 +43,7 @@ class PWMInterruptRegistry {
     configureIRQIfNeeded()
     pwm_clear_irq(slice)
     pwm_set_irq_enabled(slice, true)
+    return true
   }
 
   private func configureIRQIfNeeded() {
@@ -49,8 +60,12 @@ class PWMInterruptRegistry {
 
     while pending != 0 {
       let sliceIndex = UInt32(pending.trailingZeroBitCount)
+      let sliceID = SliceID(rawValue: sliceIndex)
+      let wrapCount = (wrapCounts[sliceID] ?? 0) &+ 1
+      wrapCounts[sliceID] = wrapCount
+      let wrap = sliceWraps[sliceID] ?? UInt16.max
       pwm_clear_irq(sliceIndex)
-      handlers[SliceID(rawValue: sliceIndex)]?.drive()
+      handlers[sliceID]?.drive(wrap: wrap, wrapCount: wrapCount)
       pending &= ~(UInt32(1) << sliceIndex)
     }
   }
