@@ -13,16 +13,11 @@ struct App {
     let bluePin = Pin(number: 17)
     let config = PWMConfig(frequencyHz: 1000, wrap: 4095)
 
-    let phase = PhaseEffect(
-      .fade(durationSeconds: 2, startLevel: 0, endLevel: 1),
-      .off.withDuration(1),
-      .on.withDuration(5),
-      .fade(durationSeconds: 2, startLevel: 1, endLevel: 0),
-      repeats: true
-    )
+    let redEffect = PoliceFlashEffect(offsetMs: 0)
+    let blueEffect = PoliceFlashEffect(offsetMs: 150)
 
-    _ = redPin.pwm(phase, config: config)
-    _ = bluePin.pwm(.on, config: config)
+    _ = redPin.pwm(redEffect, config: config)
+    _ = bluePin.pwm(blueEffect, config: config)
 
     while true {
       tight_loop_contents()
