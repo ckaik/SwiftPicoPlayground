@@ -14,7 +14,7 @@ public final class FadeEffect: PWMEffect {
   }
 
   public func level(context: PWMEffectContext) -> UInt16 {
-    let t = context.repeatingProgress(durationSeconds: durationSeconds)
+    let t = context.progress(durationSeconds: durationSeconds)
     let wrap = Float(context.config.wrap)
     let scaledStart = startLevel * wrap
     let scaledEnd = endLevel * wrap

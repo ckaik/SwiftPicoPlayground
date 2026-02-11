@@ -17,8 +17,12 @@ struct App {
     let redEffect = baseFade.withTimingCurve(.easeInOut)
     let blueEffect = baseFade.withTimingCurve(.easeOut)
 
-    _ = redPin.pwm(redEffect, config: config)
-    _ = bluePin.pwm(blueEffect, config: config)
+    _ = redPin.pwm(.flicker(), config: config)
+    _ = bluePin.pwm(
+      .phase(
+        .policeFlash().withDuration(2),
+        .off.withDuration(10)
+      ), config: config)
 
     while true {
       tight_loop_contents()
