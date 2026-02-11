@@ -35,6 +35,21 @@ extension Pin {
 
     return PinCancellable(pinId: pinId)
   }
+
+  @discardableResult
+  public func pwm(
+    _ effect: some PWMEffect,
+    config: PWMConfig
+  ) -> PinCancellable? {
+    pwm(config: config) { pinId, config, wrapCount in
+      effect.level(
+        context: PWMEffectContext(
+          pinId: pinId,
+          config: config,
+          wrapCount: wrapCount
+        ))
+    }
+  }
 }
 
 public struct PinCancellable: Cancellable {
