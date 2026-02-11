@@ -8,7 +8,7 @@ public final class FadeEffect: PWMEffect {
     @Clamped startLevel: Float = 0,
     @Clamped endLevel: Float = 1
   ) {
-    self.durationSeconds = max(0.001, durationSeconds)
+    self.durationSeconds = PWMConstants.clampDuration(durationSeconds)
     self.startLevel = startLevel
     self.endLevel = endLevel
   }

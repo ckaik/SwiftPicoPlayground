@@ -4,7 +4,7 @@ public final class InjectedDurationEffect: PWMEffect {
 
   public init(durationSeconds: Float, level: @escaping (PWMEffectContext) -> UInt16) {
     fn = level
-    self.durationSeconds = durationSeconds
+    self.durationSeconds = PWMConstants.clampDuration(durationSeconds)
   }
 
   public func level(context: PWMEffectContext) -> UInt16 {

@@ -32,13 +32,7 @@ public final class PhaseEffect: PWMEffect {
       let next = cursor + phase.durationSeconds
       if cycleTime <= next {
         let localSeconds = max(0, cycleTime - cursor)
-        let safeHz = max(1, context.config.frequencyHz)
-        let localWrapCount = UInt32(max(0, Int(localSeconds * safeHz)))
-        let localContext = PWMEffectContext(
-          pinId: context.pinId,
-          config: context.config,
-          wrapCount: localWrapCount
-        )
+        let localContext = context.withElapsedSeconds(localSeconds)
 
         return phase.level(context: localContext)
       }

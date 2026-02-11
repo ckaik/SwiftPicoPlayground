@@ -10,9 +10,9 @@ public final class PoliceFlashEffect: PWMEffect {
     pauseMs: Float = 200,
     offsetMs: Float = 0
   ) {
-    let onSeconds = max(0.001, onMs / 1000)
-    let gapSeconds = max(0.001, gapMs / 1000)
-    let pauseSeconds = max(0.001, pauseMs / 1000)
+    let onSeconds = PWMConstants.clampDuration(onMs / 1000)
+    let gapSeconds = PWMConstants.clampDuration(gapMs / 1000)
+    let pauseSeconds = PWMConstants.clampDuration(pauseMs / 1000)
 
     phase = PhaseEffect(
       .on.withDuration(onSeconds),
@@ -31,14 +31,8 @@ public final class PoliceFlashEffect: PWMEffect {
       return phase.level(context: context)
     }
 
-    let safeHz = max(1, context.config.frequencyHz)
     let adjustedSeconds = context.elapsedSeconds + offsetSeconds
-    let adjustedWrapCount = UInt32(max(0, Int(adjustedSeconds * safeHz)))
-    let adjustedContext = PWMEffectContext(
-      pinId: context.pinId,
-      config: context.config,
-      wrapCount: adjustedWrapCount
-    )
+    let adjustedContext = context.withElapsedSeconds(adjustedSeconds)
 
     return phase.level(context: adjustedContext)
   }

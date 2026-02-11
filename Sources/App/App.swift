@@ -13,8 +13,9 @@ struct App {
     let bluePin = Pin(number: 17)
     let config = PWMConfig(frequencyHz: 1000, wrap: 4095)
 
-    let redEffect = PoliceFlashEffect(offsetMs: 0)
-    let blueEffect = PoliceFlashEffect(offsetMs: 150)
+    let baseFade = FadeEffect(durationSeconds: 5, startLevel: 0, endLevel: 1)
+    let redEffect = baseFade.withTimingCurve(.easeInOut)
+    let blueEffect = baseFade.withTimingCurve(.easeOut)
 
     _ = redPin.pwm(redEffect, config: config)
     _ = bluePin.pwm(blueEffect, config: config)

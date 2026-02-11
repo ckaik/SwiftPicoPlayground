@@ -1,0 +1,58 @@
+public enum TimingCurve {
+  case linear
+  case easeIn
+  case easeOut
+  case easeInOut
+  case custom((Float) -> Float)
+
+  public func apply(_ t: Float) -> Float {
+    let clamped = min(1, max(0, t))
+    switch self {
+    case .linear:
+      return clamped
+    case .easeIn:
+      return clamped * clamped
+    case .easeOut:
+      return clamped * (2 - clamped)
+    case .easeInOut:
+      if clamped < 0.5 {
+        return 2 * clamped * clamped
+      }
+      return -1 + (4 - 2 * clamped) * clamped
+    case .custom(let fn):
+      return min(1, max(0, fn(clamped)))
+    }
+  }
+}
+
+public final class TimingCurveEffect: PWMEffect {
+  public let durationSeconds: Float
+
+  private let effect: PWMEffect
+  private let curve: TimingCurve
+
+  public init(_ effect: PWMEffect, curve: TimingCurve) {
+    self.effect = effect
+    self.curve = curve
+    self.durationSeconds = PWMConstants.clampDuration(effect.durationSeconds)
+  }
+
+  public func level(context: PWMEffectContext) -> UInt16 {
+    let safeDuration = PWMConstants.clampDuration(durationSeconds)
+    let elapsed = context.elapsedSeconds
+
+    let cycles = floorf(elapsed / safeDuration)
+    let fraction = (elapsed / safeDuration) - cycles
+    let curved = curve.apply(fraction)
+    let adjustedElapsed = (cycles + curved) * safeDuration
+    let adjustedContext = context.withElapsedSeconds(adjustedElapsed)
+
+    return effect.level(context: adjustedContext)
+  }
+}
+
+extension PWMEffect {
+  public func withTimingCurve(_ curve: TimingCurve) -> TimingCurveEffect {
+    TimingCurveEffect(self, curve: curve)
+  }
+}

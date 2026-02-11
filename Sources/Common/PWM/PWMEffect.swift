@@ -26,20 +26,27 @@ public struct PWMEffectContext {
 
   public func totalWraps(durationSeconds: Float) -> UInt32 {
     let safeHz = max(1, config.frequencyHz)
-    let safeDuration = max(0.001, durationSeconds)
+    let safeDuration = PWMConstants.clampDuration(durationSeconds)
     let wraps = safeHz * safeDuration
     return UInt32(max(1, Int(wraps)))
   }
 
   public func progress(durationSeconds: Float) -> Float {
-    let safeDuration = max(0.001, durationSeconds)
+    let safeDuration = PWMConstants.clampDuration(durationSeconds)
     @Clamped var t = elapsedSeconds / safeDuration
     return t
   }
 
   public func repeatingProgress(durationSeconds: Float) -> Float {
-    let safeDuration = max(0.001, durationSeconds)
+    let safeDuration = PWMConstants.clampDuration(durationSeconds)
     @Clamped var t = elapsedSeconds.truncatingRemainder(dividingBy: safeDuration) / safeDuration
     return t
+  }
+
+  public func withElapsedSeconds(_ seconds: Float) -> PWMEffectContext {
+    let safeHz = max(1, config.frequencyHz)
+    let clampedSeconds = max(0, seconds)
+    let wrapCount = UInt32(max(0, Int(clampedSeconds * safeHz)))
+    return PWMEffectContext(pinId: pinId, config: config, wrapCount: wrapCount)
   }
 }
