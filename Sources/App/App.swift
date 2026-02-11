@@ -10,22 +10,18 @@ struct App {
     stdio_init_all()
 
     let redPin = Pin(number: 15)
-    let bluePin = Pin(number: 16)
+    let bluePin = Pin(number: 17)
     let config = PWMConfig(frequencyHz: 1000, wrap: 4095)
-    let tickMs: Float = 10
-    let cycleMs: Float = 2 * 60 + 40 + 200
 
-    let redEffect = PoliceFlashEffect(
-      tickMs: tickMs,
-      offsetMs: 0
-    )
-    let blueEffect = PoliceFlashEffect(
-      tickMs: tickMs,
-      offsetMs: cycleMs / 2
-    )
+    _ = redPin.pwm(config: config) { _, cfg, wrapCount in
+      let phase = wrapCount % 200
+      return phase < 100 ? cfg.wrap : 0
+    }
 
-    redPin.pwm(redEffect, config: config, tickMs: tickMs)
-    bluePin.pwm(blueEffect, config: config, tickMs: tickMs)
+    _ = bluePin.pwm(config: config) { _, cfg, wrapCount in
+      let phase = (wrapCount + 100) % 200
+      return phase < 100 ? cfg.wrap : 0
+    }
 
     while true {
       tight_loop_contents()

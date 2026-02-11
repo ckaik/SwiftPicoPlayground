@@ -3,7 +3,6 @@ import CPicoSDK
 public final class Pin {
   public let id: PinID
 
-  internal(set) public var pwmIsRunning = false
   internal(set) public var isInitialized = false
 
   public init(id: PinID) {

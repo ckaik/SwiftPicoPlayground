@@ -1,23 +1,12 @@
 import CPicoSDK
 
-// This whole file is a workaround for the fact that Swift doesn't allow capturing any context when
-// passing a Swift closure as a C function pointer.
+public typealias PWMLevelComputation = (PinID, PWMConfig, UInt32) -> UInt16
 
-typealias PWMLevelComputation = (PinID, UInt16, UInt32) -> UInt16
+final class PWMInterruptRegistry {
+  static var onConfigOverride: ((SliceID, PWMConfig, PWMConfig) -> Void)?
 
-private typealias SliceHandlers = [PinID: PWMLevelComputation]
-
-extension SliceHandlers {
-  func drive(wrap: UInt16, wrapCount: UInt32) {
-    for (pin, computeLevel) in self {
-      pwm_set_gpio_level(pin.rawValue, computeLevel(pin, wrap, wrapCount))
-    }
-  }
-}
-
-class PWMInterruptRegistry {
   private var handlers: [SliceID: SliceHandlers] = [:]
-  private var sliceWraps: [SliceID: UInt16] = [:]
+  private var sliceConfigs: [SliceID: PWMConfig] = [:]
   private var wrapCounts: [SliceID: UInt32] = [:]
   private var isConfigured = false
 
@@ -25,17 +14,27 @@ class PWMInterruptRegistry {
 
   static let shared = PWMInterruptRegistry()
 
+  func isRegistered(pin: PinID) -> Bool {
+    let slice = pwm_gpio_to_slice_num(pin.rawValue)
+    let sliceID = SliceID(rawValue: slice)
+    return handlers[sliceID]?[pin] != nil
+  }
+
   func register(
     pin: PinID,
-    wrap: UInt16,
+    config: PWMConfig,
     computeLevel: @escaping PWMLevelComputation
   ) -> Bool {
     let slice = pwm_gpio_to_slice_num(pin.rawValue)
     let sliceID = SliceID(rawValue: slice)
-    if let existingWrap = sliceWraps[sliceID], existingWrap != wrap {
-      return false
+    let previous = sliceConfigs[sliceID]
+
+    if let previous, previous != config {
+      Self.onConfigOverride?(sliceID, previous, config)
     }
-    sliceWraps[sliceID] = wrap
+
+    sliceConfigs[sliceID] = config
+
     var pinHandlers = handlers[sliceID] ?? [:]
     pinHandlers[pin] = computeLevel
     handlers[sliceID] = pinHandlers
@@ -43,6 +42,27 @@ class PWMInterruptRegistry {
     configureIRQIfNeeded()
     pwm_clear_irq(slice)
     pwm_set_irq_enabled(slice, true)
+
+    return true
+  }
+
+  func unregister(pin: PinID) -> Bool {
+    let slice = pwm_gpio_to_slice_num(pin.rawValue)
+    let sliceID = SliceID(rawValue: slice)
+    guard var pinHandlers = handlers[sliceID], pinHandlers.removeValue(forKey: pin) != nil else {
+      return false
+    }
+
+    handlers[sliceID] = pinHandlers.isEmpty ? nil : pinHandlers
+    pwm_set_gpio_level(pin.rawValue, 0)
+
+    if pinHandlers.isEmpty {
+      sliceConfigs[sliceID] = nil
+      wrapCounts[sliceID] = nil
+      pwm_set_irq_enabled(slice, false)
+      pwm_set_enabled(slice, false)
+    }
+
     return true
   }
 
@@ -62,16 +82,29 @@ class PWMInterruptRegistry {
       let sliceIndex = UInt32(pending.trailingZeroBitCount)
       let sliceID = SliceID(rawValue: sliceIndex)
       let wrapCount = (wrapCounts[sliceID] ?? 0) &+ 1
+
       wrapCounts[sliceID] = wrapCount
-      let wrap = sliceWraps[sliceID] ?? UInt16.max
-      pwm_clear_irq(sliceIndex)
-      handlers[sliceID]?.drive(wrap: wrap, wrapCount: wrapCount)
+
+      if let config = sliceConfigs[sliceID] {
+        pwm_clear_irq(sliceIndex)
+        handlers[sliceID]?.drive(config: config, wrapCount: wrapCount)
+      }
+
       pending &= ~(UInt32(1) << sliceIndex)
     }
   }
 }
 
-// Top-level, non-capturing — safe to use as a C function pointer
+private typealias SliceHandlers = [PinID: PWMLevelComputation]
+
+extension SliceHandlers {
+  func drive(config: PWMConfig, wrapCount: UInt32) {
+    for (pin, computeLevel) in self {
+      pwm_set_gpio_level(pin.rawValue, computeLevel(pin, config, wrapCount))
+    }
+  }
+}
+
 private func _pwmIRQHandler() {
   PWMInterruptRegistry.shared.servicePendingSlices()
 }
