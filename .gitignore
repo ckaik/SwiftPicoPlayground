@@ -10,3 +10,4 @@ DerivedData/
 .vscode
 .env_prep
 toolset.json
+Secrets.swift
