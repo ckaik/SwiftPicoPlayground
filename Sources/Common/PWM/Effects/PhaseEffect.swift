@@ -2,17 +2,26 @@ public final class PhaseEffect: PWMEffect {
   public let durationSeconds: Float
 
   private let phases: [PWMEffect]
+  private let cumulativeOffsets: [Float]
   private let repeats: Bool
 
   public init(_ phases: [PWMEffect], repeats: Bool = true) {
-    let durationSeconds = phases.reduce(0) { $0 + $1.durationSeconds }
+    var offsets: [Float] = []
+    offsets.reserveCapacity(phases.count)
+    var cumulative: Float = 0
+    for phase in phases {
+      offsets.append(cumulative)
+      cumulative += PWMConstants.clampDuration(phase.durationSeconds)
+    }
+
     precondition(
-      !phases.isEmpty && durationSeconds > 0,
+      !phases.isEmpty && cumulative > 0,
       "PhaseEffect requires at least one phase and must have a total duration greater than 0"
     )
 
     self.phases = phases
-    self.durationSeconds = durationSeconds
+    self.cumulativeOffsets = offsets
+    self.durationSeconds = cumulative
     self.repeats = repeats
   }
 
@@ -27,19 +36,14 @@ public final class PhaseEffect: PWMEffect {
       ? elapsed.truncatingRemainder(dividingBy: durationSeconds)
       : min(elapsed, durationSeconds)
 
-    var cursor: Float = 0
-    for phase in phases {
-      let next = cursor + phase.durationSeconds
-      if cycleTime <= next {
-        let localSeconds = max(0, cycleTime - cursor)
-        let localContext = context.withElapsedSeconds(localSeconds)
-
-        return phase.level(context: localContext)
-      }
-      cursor = next
+    for index in stride(from: phases.count - 1, through: 0, by: -1)
+    where cycleTime >= cumulativeOffsets[index] {
+      let localSeconds = cycleTime - cumulativeOffsets[index]
+      let localContext = context.withElapsedSeconds(localSeconds)
+      return phases[index].level(context: localContext)
     }
 
-    return phases.last?.level(context: context) ?? 0
+    return phases[0].level(context: context.withElapsedSeconds(0))
   }
 }
 

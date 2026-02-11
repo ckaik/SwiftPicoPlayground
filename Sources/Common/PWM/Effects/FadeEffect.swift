@@ -20,7 +20,7 @@ public final class FadeEffect: PWMEffect {
     let scaledEnd = endLevel * wrap
     let delta = scaledEnd - scaledStart
     let value = scaledStart + (delta * t)
-    return UInt16(max(0, min(Float(context.config.wrap), value)))
+    return UInt16(max(0, min(wrap, value)))
   }
 }
 

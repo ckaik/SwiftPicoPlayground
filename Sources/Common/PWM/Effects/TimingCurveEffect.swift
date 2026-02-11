@@ -38,13 +38,12 @@ public final class TimingCurveEffect: PWMEffect {
   }
 
   public func level(context: PWMEffectContext) -> UInt16 {
-    let safeDuration = PWMConstants.clampDuration(durationSeconds)
     let elapsed = context.elapsedSeconds
-
-    let cycles = floorf(elapsed / safeDuration)
-    let fraction = (elapsed / safeDuration) - cycles
+    let normalized = elapsed / durationSeconds
+    let cycles = floorf(normalized)
+    let fraction = normalized - cycles
     let curved = curve.apply(fraction)
-    let adjustedElapsed = (cycles + curved) * safeDuration
+    let adjustedElapsed = (cycles + curved) * durationSeconds
     let adjustedContext = context.withElapsedSeconds(adjustedElapsed)
 
     return effect.level(context: adjustedContext)

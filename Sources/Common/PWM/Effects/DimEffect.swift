@@ -2,7 +2,7 @@ public final class DimEffect: PWMEffect {
   private let brightness: Float
 
   public init(@Clamped brightness: Float) {
-    self.brightness = min(1, max(0, brightness))
+    self.brightness = brightness
   }
 
   public func level(context: PWMEffectContext) -> UInt16 {
