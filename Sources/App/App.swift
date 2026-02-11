@@ -13,15 +13,16 @@ struct App {
     let bluePin = Pin(number: 17)
     let config = PWMConfig(frequencyHz: 1000, wrap: 4095)
 
-    _ = redPin.pwm(config: config) { _, cfg, wrapCount in
-      let phase = wrapCount % 200
-      return phase < 100 ? cfg.wrap : 0
-    }
+    let phase = PhaseEffect(
+      .fade(durationSeconds: 2, startLevel: 0, endLevel: 1),
+      .off.withDuration(1),
+      .on.withDuration(5),
+      .fade(durationSeconds: 2, startLevel: 1, endLevel: 0),
+      repeats: true
+    )
 
-    _ = bluePin.pwm(config: config) { _, cfg, wrapCount in
-      let phase = (wrapCount + 100) % 200
-      return phase < 100 ? cfg.wrap : 0
-    }
+    _ = redPin.pwm(phase, config: config)
+    _ = bluePin.pwm(.on, config: config)
 
     while true {
       tight_loop_contents()
