@@ -11,6 +11,12 @@ The project uses the [CPicoSDK](https://github.com/gonzalolarralde/CPicoSDK) pac
 
 I'm running this on a Mac in VS Code. I'm using a Raspberry Pi Pico 2W and the official Raspberry Pi Debug Probe for flashing and debugging. However the the code should work on any Pico board with only minor adjustments thanks to the CPicoSDK.
 
+## Networking Overview
+
+- **HTTP Server** (`Sources/MongooseKit/HTTP/`): A lightweight wrapper around Mongoose HTTP primitives for handling simple request/response flows on-device.
+- **MQTT Client** (`Sources/MongooseKit/MQTT/`): A client-focused API for connecting to an MQTT broker, subscribing to topics, and handling reconnect behavior for basic IoT messaging scenarios.
+- **JSON Decoder** (`Sources/MongooseKit/Utilities/MGJSONDecoder.swift`): A small utility layer that helps decode Mongoose JSON values into Swift-friendly types used by the networking components.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE) for repository-owned code.
