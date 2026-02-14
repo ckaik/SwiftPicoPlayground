@@ -1,0 +1,4 @@
+module Mongoose {
+  header "mongoose_swift.h"
+  export *
+}

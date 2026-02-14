@@ -42,6 +42,13 @@ fi
 # Users can opt to place the output in a different location and source it here once inspected if preferred.
 source "$PREPARATION_SCRIPT_PATH"
 
+# Avoid linking lwIP/cyw43_lwip; Mongoose provides its own TCP/IP driver.
+export CPICOSDK_pico2_w_IMPORTED_LIBS_MORE="pico_cyw43_arch_poll"
+export CPICOSDK_pimoroni_pico_plus2_w_rp2350_IMPORTED_LIBS_MORE="pico_cyw43_arch_poll"
+
+# Disable lwIP integration for cyw43_arch (Mongoose provides its own TCP/IP).
+export EXTRA_CONFIG_PARAMS="$EXTRA_CONFIG_PARAMS -Xcc -DCYW43_LWIP=0"
+
 # Make sure the selected swift toolchain is installed.
 "$SWIFTLY_PATH" install
 
