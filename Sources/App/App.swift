@@ -1,65 +1,85 @@
 import Common
-import Mongoose
+import MongooseKit
+
+public struct Light: MGJSONDecodable {
+  public let brightness: UInt8
+  public let isOn: Bool?
+
+  public init(brightness: UInt8, isOn: Bool?) {
+    self.brightness = brightness
+    self.isOn = isOn
+  }
+
+  public init(reader: MGJSONParser) throws(MGJSONDecodingError) {
+    self.brightness = (try? reader.number("$.brightness")) ?? 255
+    self.isOn = try? reader.bool("$.state")
+  }
+}
 
 @main
 struct App {
   enum AppError: Error {
-    case wifiConnectFailed
-  }
-
-  private static var ssidCString: UnsafeMutablePointer<CChar>?
-  private static var passwordCString: UnsafeMutablePointer<CChar>?
-
-  private static func makeCString(_ string: String) -> UnsafeMutablePointer<CChar> {
-    let bytes = Array(string.utf8CString)
-    let ptr = UnsafeMutablePointer<CChar>.allocate(capacity: bytes.count)
-    ptr.initialize(from: bytes, count: bytes.count)
-    return ptr
-  }
-
-  private static func mongooseSecurity(for mode: WiFiAuthenticationMode) -> UInt8 {
-    switch mode {
-    case .open:
-      return UInt8(MG_WIFI_SECURITY_OPEN)
-    case .wpaTkipPsk:
-      return UInt8(MG_WIFI_SECURITY_WPA)
-    case .wpa2AesPsk, .wpa2MixedPsk:
-      return UInt8(MG_WIFI_SECURITY_WPA2)
-    case .wpa3SaeAesPsk:
-      return UInt8(MG_WIFI_SECURITY_WPA3)
-    case .wpa3Wpa2AesPsk:
-      return UInt8(MG_WIFI_SECURITY_WPA2 | MG_WIFI_SECURITY_WPA3)
-    }
+    case cyw43InitializationFailed(PicoError)
   }
 
   static func main() throws(AppError) {
     stdio_init_all()
 
     let red = Pin(number: 15)
+    let green = Pin(number: 14)
     let blue = Pin(number: 17)
 
-    ssidCString = makeCString(Secrets.ssid)
-    passwordCString = makeCString(Secrets.password)
+    red.off()
+    green.off()
+    blue.off()
 
-    var wifi = mg_wifi_data()
-    wifi.ssid = ssidCString
-    wifi.pass = passwordCString
-    wifi.security = mongooseSecurity(for: Secrets.mode)
-    wifi.apmode = false
-
-    var mgr = mg_mgr()
-    mg_mgr_init(&mgr)
-
-    guard mg_wifi_connect(&wifi) else {
+    do {
+      try MGManager.shared.connectToWiFi(
+        ssid: Secrets.ssid,
+        password: Secrets.password,
+        security: Secrets.mode
+      )
+      blue.on()
+    } catch {
       red.on()
-      CPicoSDK.sleep_ms(5000)
-      throw .wifiConnectFailed
+      CPicoSDK.sleep_ms(10000)
+      return
     }
 
-    blue.on()
+    MGManager.shared.waitForReady()
 
-    while true {
-      mg_mgr_poll(&mgr, 100)
+    let client = MQTTClient(
+      options: MQTTClientOptions(
+        host: "10.0.0.101",
+        clientID: "pico",
+        username: Secrets.mqttUser,
+        password: Secrets.mqttPassword,
+        topic: "pico/test",
+        reconnectAutomatically: true
+      ))
+
+    let pwm = PWMConfig(frequencyHz: 1000, wrap: 4095)
+
+    client.on("pico/test") { message in
+      if let light = try? MGJSONDecoder().decode(Light.self, from: message.payload) {
+        if let isOn = light.isOn, isOn {
+          red.pwm(
+            .dim(brightness: Float(light.brightness) / 255),
+            config: pwm
+          )
+        } else {
+          red.pwm(.off, config: pwm)
+        }
+      }
     }
+
+    do {
+      try client.connect()
+      green.pwm(.dim(brightness: 0.5), config: pwm)
+    } catch {
+      red.pwm(.flicker(), config: pwm)
+    }
+
+    MGManager.shared.loop()
   }
 }

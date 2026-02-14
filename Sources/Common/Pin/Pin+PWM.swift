@@ -7,9 +7,6 @@ extension Pin {
     computeLevel: @escaping PWMLevelComputation
   ) -> PinCancellable? {
     let pinId = id
-    guard !PWMInterruptRegistry.shared.isRegistered(pin: pinId) else {
-      return nil
-    }
 
     let registered = PWMInterruptRegistry.shared.register(
       pin: pinId,

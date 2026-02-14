@@ -20,12 +20,8 @@
 #undef MG_WIFI_SECURITY_WPA3
 #endif
 
-enum {
-  MG_WIFI_SECURITY_OPEN = 0,
-  MG_WIFI_SECURITY_WEP = 1 << 0,
-  MG_WIFI_SECURITY_WPA = 1 << 1,
-  MG_WIFI_SECURITY_WPA2 = 1 << 2,
-  MG_WIFI_SECURITY_WPA3 = 1 << 3
-};
+void swift_mg_http_reply(struct mg_connection *conn, int status_code, const char *headers, const char *body) {
+  mg_http_reply(conn, status_code, headers, body);
+}
 
 #endif  // MONGOOSE_SWIFT_H

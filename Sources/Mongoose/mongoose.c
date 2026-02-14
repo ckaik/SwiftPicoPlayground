@@ -25044,6 +25044,13 @@ void cyw43_cb_tcpip_set_link_down(cyw43_t *self, int itf) {
   }
 }
 
+// Without lwIP, cyw43_tcpip_link_status is not provided by the SDK.
+// Delegate to cyw43_wifi_link_status which checks raw WiFi link state;
+// Mongoose manages its own TCP/IP so a full lwIP implementation isn't needed.
+int cyw43_tcpip_link_status(cyw43_t *self, int itf) {
+  return cyw43_wifi_link_status(self, itf);
+}
+
 // there's life beyond lwIP
 void pbuf_copy_partial(void) {
   (void) 0;

@@ -165,6 +165,7 @@ int  cyw43_send_ethernet(cyw43_t *self, int itf, size_t len, const void *buf,
                          bool is_pbuf);
 int  cyw43_wifi_get_mac(cyw43_t *self, int itf, uint8_t mac[6]);
 int  cyw43_wifi_link_status(cyw43_t *self, int itf);
+int  cyw43_tcpip_link_status(cyw43_t *self, int itf);
 int  cyw43_wifi_update_multicast_filter(cyw43_t *self, uint8_t *addr,
                                         bool add);
 int  cyw43_wifi_scan(cyw43_t *self, cyw43_wifi_scan_options_t *opts, void *env,

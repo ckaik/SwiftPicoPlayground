@@ -27,17 +27,13 @@ let package = Package(
       dependencies: [
         "CPicoSDK",
         "Common",
-        "Mongoose",
+        "MongooseKit",
       ]
     ),
     .target(name: "Common", dependencies: ["CPicoSDK", "CMath"]),
     .target(name: "CMath"),
-    .target(
-      name: "Mongoose",
-      cSettings: [
-        .headerSearchPath("shims")
-      ]
-    ),
+    .target(name: "Mongoose"),
+    .target(name: "MongooseKit", dependencies: ["Mongoose"]),
   ],
   swiftLanguageModes: [.v5]
 )

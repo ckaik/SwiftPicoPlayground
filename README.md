@@ -13,4 +13,8 @@ I'm running this on a Mac in VS Code. I'm using a Raspberry Pi Pico 2W and the o
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE) for repository-owned code.
+
+This repository also includes third-party software with separate license terms, including Mongoose in `Sources/Mongoose/` (dual-licensed GPL-2.0-only or commercial). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details and distribution obligations.
+
+For GPL distribution workflows, a copy of GPLv2 is included at [COPYING.GPL-2.0](COPYING.GPL-2.0).
