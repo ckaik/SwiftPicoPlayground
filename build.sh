@@ -10,6 +10,12 @@ export BUILD_TYPE="RelWithDebInfo" # Options: Debug, Release, RelWithDebInfo, Mi
 export BUILD_SCRIPT_VERSION=1 # Helps the preparation script to warn in case of future changes.
 export PREPARATION_SCRIPT_PATH="$(dirname "$0")/.env_prep"
 
+# Ensure git submodules are initialised before building.
+if git submodule status --recursive 2>/dev/null | grep -q '^-'; then
+  echo "Submodules not initialised – running 'git submodule update --init --recursive'..."
+  git submodule update --init --recursive
+fi
+
 if command -v swiftly >/dev/null 2>&1; then
   export SWIFTLY_PATH="$(command -v swiftly)"
 elif [ -f "$HOME/.swiftly/bin/swiftly" ]; then                 # macOS default path

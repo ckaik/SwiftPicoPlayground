@@ -9,4 +9,7 @@ format:
 lint:
 	swift-format lint --recursive Package.swift Sources/
 
-.PHONY: format lint hooks default
+submodule:
+	git submodule update --init --recursive
+
+.PHONY: format lint hooks default submodule

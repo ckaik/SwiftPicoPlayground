@@ -4,7 +4,8 @@ This repository includes third-party software with licenses different from this 
 
 ## Mongoose (Cesanta)
 
-- Component path: `Sources/Mongoose/`
+- Upstream source (submodule): `third_party/mongoose/` (pinned to tag 7.20)
+- Local adapter layer: `Sources/Mongoose/` (config, shims, modulemap)
 - Upstream project: https://github.com/cesanta/mongoose
 - Copyright: Sergey Lyubka, Cesanta Software Limited
 - Declared in source header: dual-licensed under **GPL-2.0-only OR commercial**

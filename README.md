@@ -17,10 +17,18 @@ I'm running this on a Mac in VS Code. I'm using a Raspberry Pi Pico 2W and the o
 - **MQTT Client** (`Sources/MongooseKit/MQTT/`): A client-focused API for connecting to an MQTT broker, subscribing to topics, and handling reconnect behavior for basic IoT messaging scenarios.
 - **JSON Decoder** (`Sources/MongooseKit/Utilities/MGJSONDecoder.swift`): A small utility layer that helps decode Mongoose JSON values into Swift-friendly types used by the networking components.
 
+## Getting Started
+
+After cloning, initialise the Mongoose submodule:
+
+```bash
+git submodule update --init
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE) for repository-owned code.
 
-This repository also includes third-party software with separate license terms, including Mongoose in `Sources/Mongoose/` (dual-licensed GPL-2.0-only or commercial). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details and distribution obligations.
+This repository also includes third-party software with separate license terms, including Mongoose (via a git submodule at `third_party/mongoose/`, dual-licensed GPL-2.0-only or commercial). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details and distribution obligations.
 
 For GPL distribution workflows, a copy of GPLv2 is included at [COPYING.GPL-2.0](COPYING.GPL-2.0).
