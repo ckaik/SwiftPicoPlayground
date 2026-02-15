@@ -55,7 +55,6 @@ struct App {
         clientID: "pico",
         username: Secrets.mqttUser,
         password: Secrets.mqttPassword,
-        topic: "pico/test",
         reconnectAutomatically: true
       ))
 

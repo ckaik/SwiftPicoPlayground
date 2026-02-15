@@ -8,7 +8,8 @@ public final class MQTTClient {
   fileprivate(set) var isConnecting = false
   fileprivate(set) var currentConnection: UnsafeMutablePointer<mg_connection>?
 
-  private var handlers: [MQTTTopicKey: (MQTTMessage) -> Void] = [:]
+  private var topics: Set<String> = .init()
+  private var handlers: [String: (MQTTMessage) -> Void] = [:]
 
   public init(options: MQTTClientOptions) {
     self.options = options
@@ -30,12 +31,13 @@ public final class MQTTClient {
     }
   }
 
-  public func on(_ topic: MQTTTopicKey, handler: @escaping (MQTTMessage) -> Void) {
+  public func on(_ topic: String, handler: @escaping (MQTTMessage) -> Void) {
     handlers[topic] = handler
+    subscribe(to: topic)
   }
 
   func handle(_ message: MQTTMessage) {
-    handlers[MQTTTopicKey(message.topic)]?(message)
+    handlers[message.topic]?(message)
   }
 
   func onConnect(_ conn: UnsafeMutablePointer<mg_connection>) {
@@ -43,6 +45,12 @@ public final class MQTTClient {
     isConnecting = false
     isConnected = true
     subscribe()
+  }
+
+  private func subscribe() {
+    for topic in topics {
+      subscribe(to: topic)
+    }
   }
 
   func onDisconnect(_ conn: UnsafeMutablePointer<mg_connection>) {
@@ -69,9 +77,6 @@ public final class MQTTClient {
     let clientID = try makeCString(options.clientID)
     defer { mg_free(clientID) }
 
-    let topic = try makeCString(options.topic)
-    defer { mg_free(topic) }
-
     let message = try makeCString("bye")
     defer { mg_free(message) }
 
@@ -96,7 +101,6 @@ public final class MQTTClient {
       mgOptions.pass = mg_str_s(pass)
     }
 
-    mgOptions.topic = mg_str_s(topic)
     mgOptions.message = mg_str_s(message)
     mgOptions.keepalive = 60
     mgOptions.clean = true
@@ -120,14 +124,15 @@ public final class MQTTClient {
     return connection
   }
 
-  private func subscribe() {
+  private func subscribe(to topic: String) {
     guard let conn = currentConnection else { return }
 
-    options.topic.withCString { topic in
+    topic.withCString { topic in
       var opts = mg_mqtt_opts()
       opts.topic = mg_str_s(topic)
       mg_mqtt_sub(conn, &opts)
     }
+    topics.insert(topic)
   }
 
   private func setupReconnectTimer() {

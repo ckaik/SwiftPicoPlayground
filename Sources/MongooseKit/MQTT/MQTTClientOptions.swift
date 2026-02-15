@@ -4,7 +4,6 @@ public struct MQTTClientOptions {
   public var clientID: String
   public var username: String?
   public var password: String?
-  public var topic: String
   public var reconnectAutomatically: Bool
 
   public init(
@@ -13,7 +12,6 @@ public struct MQTTClientOptions {
     clientID: String,
     username: String? = nil,
     password: String? = nil,
-    topic: String,
     reconnectAutomatically: Bool = true
   ) {
     self.host = host
@@ -21,7 +19,6 @@ public struct MQTTClientOptions {
     self.clientID = clientID
     self.username = username
     self.password = password
-    self.topic = topic
     self.reconnectAutomatically = reconnectAutomatically
   }
 }
