@@ -29,13 +29,15 @@ let package = Package(
         "Common",
         "MongooseKit",
         "PicoKit",
+        "HomeAssistantKit",
       ]
     ),
-    .target(name: "PicoKit", dependencies: ["CPicoSDK", "Common"]),
-    .target(name: "Common", dependencies: ["CPicoSDK", "CMath"]),
     .target(name: "CMath"),
     .target(name: "CMongoose"),
-    .target(name: "MongooseKit", dependencies: ["CMongoose"]),
+    .target(name: "Common", dependencies: ["CPicoSDK", "CMath"]),
+    .target(name: "HomeAssistantKit", dependencies: ["Common", "MongooseKit"]),
+    .target(name: "MongooseKit", dependencies: ["CMongoose", "Common"]),
+    .target(name: "PicoKit", dependencies: ["CPicoSDK", "Common"]),
   ],
   swiftLanguageModes: [.v5]
 )

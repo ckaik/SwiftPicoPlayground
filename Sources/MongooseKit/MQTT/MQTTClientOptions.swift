@@ -22,7 +22,3 @@ public struct MQTTClientOptions {
     self.reconnectAutomatically = reconnectAutomatically
   }
 }
-
-public enum MQTTClientError: Error {
-  case connectionFailed
-}

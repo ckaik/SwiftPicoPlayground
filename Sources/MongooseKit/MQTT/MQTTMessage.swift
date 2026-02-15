@@ -16,20 +16,3 @@ public struct MQTTMessage {
     }
   }
 }
-
-extension mg_str {
-  fileprivate func toByteArray() -> [UInt8] {
-    guard let buffer = buf, len > 0 else { return [] }
-    let rawPointer = UnsafeRawPointer(buffer).assumingMemoryBound(to: UInt8.self)
-    let bytes = UnsafeBufferPointer(start: rawPointer, count: Int(len))
-    return Array(bytes)
-  }
-
-  fileprivate func toString() -> String? {
-    let bytes = toByteArray()
-    guard !bytes.isEmpty else { return nil }
-    return bytes.withUnsafeBufferPointer { buffer -> String? in
-      String(validating: buffer, as: UTF8.self)
-    }
-  }
-}

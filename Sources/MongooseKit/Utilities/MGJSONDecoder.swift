@@ -20,6 +20,19 @@ public struct MGJSONDecoder {
   }
 }
 
+extension Bool {
+  init?(_ string: String) {
+    switch string.lowercased() {
+    case "true", "on", "yes", "1", "y":
+      self = true
+    case "false", "off", "no", "0", "n":
+      self = false
+    default:
+      return nil
+    }
+  }
+}
+
 public struct MGJSONParser {
   private let payload: [UInt8]
 
@@ -28,10 +41,13 @@ public struct MGJSONParser {
   }
 
   public func bool(_ path: String) throws(MGJSONDecodingError) -> Bool {
-    let comparison = try cString(at: path)
-    defer { mg_free(comparison) }
+    let stringValue = try string(path)
 
-    return "ON".withCString { strcasecmp($0, comparison) == 0 }
+    guard let value = Bool(stringValue) else {
+      throw MGJSONDecodingError.missingOrInvalidField(path: path)
+    }
+
+    return value
   }
 
   public func string(_ path: String) throws(MGJSONDecodingError) -> String {
@@ -80,12 +96,6 @@ public struct MGJSONParser {
   }
 
   private func withJSON<Result>(_ body: (mg_str) -> Result) -> Result {
-    payload.withUnsafeBytes { buffer in
-      var json = mg_str()
-      json.buf = UnsafeMutablePointer(
-        mutating: buffer.baseAddress?.assumingMemoryBound(to: CChar.self))
-      json.len = buffer.count
-      return body(json)
-    }
+    payload.withMGStr(body)
   }
 }

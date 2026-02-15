@@ -11,7 +11,7 @@ public final class MGManager {
   private(set) public var isLooping = false
 
   private init() {
-    mg_log_level = Int32(MG_LL_ERROR)
+    mg_log_level = Int32(MG_LL_NONE)
     mg_mgr_init(&manager)
   }
 
@@ -19,8 +19,28 @@ public final class MGManager {
     mg_mgr_free(&manager)
   }
 
+  public enum LogLevel {
+    case none
+    case debug
+    case info
+    case error
+
+    var mgLevel: Int {
+      switch self {
+      case .none: MG_LL_NONE
+      case .debug: MG_LL_DEBUG
+      case .info: MG_LL_INFO
+      case .error: MG_LL_ERROR
+      }
+    }
+  }
+
+  public func setLogLevel(_ level: LogLevel) {
+    mg_log_level = Int32(level.mgLevel)
+  }
+
   @discardableResult
-  public func waitForReady(timeoutMilliseconds: UInt64 = 30_000) -> Bool {
+  public func waitForReady(timeoutMilliseconds: UInt64 = 3_600_000) -> Bool {
     withManagerPointer { manager in
       let deadline = timeoutMilliseconds == 0 ? nil : mg_millis() + timeoutMilliseconds
 
@@ -36,7 +56,7 @@ public final class MGManager {
     }
   }
 
-  public func loop(pollIntervalMS: Int32 = 1000) {
+  public func loop(pollIntervalMS: Int32 = 10) {
     guard !isLooping else { return }
     isLooping = true
     defer { isLooping = false }
@@ -44,14 +64,6 @@ public final class MGManager {
     let manager = managerPointer
     while true {
       mg_mgr_poll(manager, pollIntervalMS)
-    }
-  }
-
-  public func poll(for attempts: Int) {
-    guard attempts > 0 else { return }
-    let manager = managerPointer
-    for _ in 0 ..< attempts {
-      mg_mgr_poll(manager, 1000)
     }
   }
 }

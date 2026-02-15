@@ -3,6 +3,10 @@ import CMongoose
 public final class MQTTClient {
   private let options: MQTTClientOptions
   private var timer: UnsafeMutablePointer<mg_timer>?
+  private var onConnectCallback: (() -> Void)?
+  private var onErrorCallback: ((String) -> Void)?
+  private var onDisconnectCallback: ((String?) -> Void)?
+  private var lastErrorMessage: String?
 
   fileprivate(set) var isConnected = false
   fileprivate(set) var isConnecting = false
@@ -31,9 +35,38 @@ public final class MQTTClient {
     }
   }
 
+  public func onConnect(_ callback: @escaping () -> Void) {
+    onConnectCallback = callback
+  }
+
+  public func onError(_ callback: @escaping (String) -> Void) {
+    onErrorCallback = callback
+  }
+
+  public func onDisconnect(_ callback: @escaping (String?) -> Void) {
+    onDisconnectCallback = callback
+  }
+
   public func on(_ topic: String, handler: @escaping (MQTTMessage) -> Void) {
     handlers[topic] = handler
     subscribe(to: topic)
+  }
+
+  public func publish(topic: String, payload: String) {
+    guard let conn = currentConnection else {
+      // TODO: should we buffer messages and send them when the connection is back?
+      return
+    }
+
+    topic.withCString { topic in
+      payload.withCString { payload in
+        var opts = mg_mqtt_opts()
+        opts.topic = mg_str_s(topic)
+        opts.message = mg_str_s(payload)
+        opts.retain = true
+        mg_mqtt_pub(conn, &opts)
+      }
+    }
   }
 
   func handle(_ message: MQTTMessage) {
@@ -44,6 +77,8 @@ public final class MQTTClient {
     guard conn == currentConnection else { return }
     isConnecting = false
     isConnected = true
+    lastErrorMessage = nil
+    onConnectCallback?()
     subscribe()
   }
 
@@ -55,9 +90,18 @@ public final class MQTTClient {
 
   func onDisconnect(_ conn: UnsafeMutablePointer<mg_connection>) {
     guard conn == currentConnection else { return }
+    let reason = lastErrorMessage
     isConnecting = false
     isConnected = false
     currentConnection = nil
+    lastErrorMessage = nil
+    onDisconnectCallback?(reason)
+  }
+
+  func handleError(_ conn: UnsafeMutablePointer<mg_connection>, _ message: String) {
+    guard conn == currentConnection else { return }
+    lastErrorMessage = message
+    onErrorCallback?(message)
   }
 
   func reconnectIfNecessary() -> Bool {
@@ -76,9 +120,6 @@ public final class MQTTClient {
   private func doConnect() throws(MQTTClientError) -> UnsafeMutablePointer<mg_connection> {
     let clientID = try makeCString(options.clientID)
     defer { mg_free(clientID) }
-
-    let message = try makeCString("bye")
-    defer { mg_free(message) }
 
     let user: UnsafeMutablePointer<CChar>? = try options.username.map(makeCString)
     defer {
@@ -101,11 +142,10 @@ public final class MQTTClient {
       mgOptions.pass = mg_str_s(pass)
     }
 
-    mgOptions.message = mg_str_s(message)
     mgOptions.keepalive = 60
     mgOptions.clean = true
-    mgOptions.qos = 1
-    mgOptions.version = 4
+    mgOptions.qos = 0
+    mgOptions.version = 4  // 3.1.1
 
     let fnData = Unmanaged.passUnretained(self).toOpaque()
     let connection: UnsafeMutablePointer<mg_connection>? = MGManager.shared.withManagerPointer {
@@ -164,18 +204,50 @@ private func mqttEventHandler(
   let client = Unmanaged<MQTTClient>.fromOpaque(rawClient).takeUnretainedValue()
 
   switch Int(ev) {
-  case MG_EV_MQTT_OPEN:
-    client.onConnect(conn)
-  case MG_EV_MQTT_MSG:
-    guard let mqttMsg = evData?.assumingMemoryBound(to: mg_mqtt_message.self) else {
-      return
-    }
+  case MG_EV_MQTT_OPEN: handleMQTTOpen(conn: conn, client: client, evData: evData)
+  case MG_EV_MQTT_MSG: handleMQTTMessage(client: client, evData: evData)
+  case MG_EV_ERROR: handleMQTTError(conn: conn, client: client, evData: evData)
+  case MG_EV_CLOSE: client.onDisconnect(conn)
+  default: break
+  }
+}
 
-    client.handle(MQTTMessage(mqttMsg.pointee))
-  case MG_EV_CLOSE:
-    client.onDisconnect(conn)
-  default:
-    break
+private func handleMQTTOpen(
+  conn: UnsafeMutablePointer<mg_connection>,
+  client: MQTTClient,
+  evData: UnsafeMutableRawPointer?
+) {
+  let ack = evData?.assumingMemoryBound(to: UInt8.self).pointee ?? 0
+  if ack == 0 {
+    client.onConnect(conn)
+  } else {
+    client.handleError(conn, "MQTT CONNACK rejected (code \(ack)): \(mqttConnackMessage(ack))")
+  }
+}
+
+private func handleMQTTMessage(client: MQTTClient, evData: UnsafeMutableRawPointer?) {
+  guard let mqttMsg = evData?.assumingMemoryBound(to: mg_mqtt_message.self) else { return }
+  client.handle(MQTTMessage(mqttMsg.pointee))
+}
+
+private func handleMQTTError(
+  conn: UnsafeMutablePointer<mg_connection>,
+  client: MQTTClient,
+  evData: UnsafeMutableRawPointer?
+) {
+  guard let errorCString = evData?.assumingMemoryBound(to: CChar.self) else { return }
+  let message = String(validatingUTF8: errorCString) ?? "unknown error"
+  client.handleError(conn, message)
+}
+
+private func mqttConnackMessage(_ code: UInt8) -> String {
+  switch code {
+  case 1: "unacceptable protocol version"
+  case 2: "identifier rejected"
+  case 3: "server unavailable"
+  case 4: "bad username or password"
+  case 5: "not authorized"
+  default: "unknown reason"
   }
 }
 
