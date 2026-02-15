@@ -27,9 +27,9 @@ struct App {
   static func main() throws(AppError) {
     stdio_init_all()
 
-    let red = Pin(number: 15)
-    let green = Pin(number: 14)
-    let blue = Pin(number: 17)
+    let red = LEDController(pin: Pin(number: 15))
+    let green = LEDController(pin: Pin(number: 14))
+    let blue = LEDController(pin: Pin(number: 17))
 
     red.off()
     green.off()
@@ -53,35 +53,18 @@ struct App {
 
     MGManager.shared.waitForReady()
 
-    var redState = false {
-      didSet {
-        redState ? red.on() : red.off()
-      }
-    }
-    var greenState = false {
-      didSet {
-        greenState ? green.on() : green.off()
-      }
-    }
-    var blueState = false {
-      didSet {
-        blueState ? blue.on() : blue.off()
-      }
-    }
-
-    let pwm = PWMConfig(frequencyHz: 1000, wrap: 4095)
     let client = HomeAssistantClient(
       mqttConfig: MQTTConfig(
         host: "10.0.0.101",
         username: Secrets.mqttUser,
         password: Secrets.mqttPassword
       ),
-      discovery: DiscoveryConfig(objectId: "Pico2W"),
+      discovery: DiscoveryConfig(objectId: "Pico"),
       discoveryPayload: DiscoveryPayload(
         qos: 0,
         device: Device(
           ids: "pico2w",
-          name: "Pico2W",
+          name: "Pico",
           manufacturer: "CKAIK",
           serialNumber: "1337",
           hardwareVersion: "0.1.0",
@@ -92,7 +75,7 @@ struct App {
           "red": Component(
             id: "led.red",
             kind: .light,
-            name: "Red LED",
+            name: "Rote LED",
             stateTopic: "pico2w/leds/red/state",
             commandTopic: "pico2w/leds/red/set",
             data: ledConfig
@@ -100,7 +83,7 @@ struct App {
           "green": Component(
             id: "led.green",
             kind: .light,
-            name: "Green LED",
+            name: "Grüne LED",
             stateTopic: "pico2w/leds/green/state",
             commandTopic: "pico2w/leds/green/set",
             data: ledConfig
@@ -108,7 +91,7 @@ struct App {
           "blue": Component(
             id: "led.blue",
             kind: .light,
-            name: "Blue LED",
+            name: "Blaue LED",
             stateTopic: "pico2w/leds/blue/state",
             commandTopic: "pico2w/leds/blue/set",
             data: ledConfig
@@ -118,11 +101,11 @@ struct App {
       state: { _, cmp in
         switch cmp.id {
         case "led.red":
-          return .init(rawValue: LightState(state: redState, brightness: 255).json)
+          return .init(rawValue: red.currentLightState().json)
         case "led.green":
-          return .init(rawValue: LightState(state: greenState, brightness: 255).json)
+          return .init(rawValue: green.currentLightState().json)
         case "led.blue":
-          return .init(rawValue: LightState(state: blueState, brightness: 255).json)
+          return .init(rawValue: blue.currentLightState().json)
         default:
           print("unknown component id: \(cmp.id)")
           return nil
@@ -134,27 +117,11 @@ struct App {
           print("received message on topic \(topic.rawValue): \(payload.rawValue)")
 
           if topic.rawValue == "pico2w/leds/red/set" {
-            if let state = try? LightState.from(json: payload) {
-              if let isOn = state.state {
-                redState = isOn
-              } else {
-                print("missing 'state' field in payload for red LED: \(payload.rawValue)")
-              }
-            } else {
-              print("failed to decode payload for red LED: \(payload.rawValue)")
-            }
+            _ = red.process(payload: payload)
           } else if topic.rawValue == "pico2w/leds/green/set" {
-            if let state = try? LightState.from(json: payload), let isOn = state.state {
-              greenState = isOn
-            } else {
-              print("failed to decode payload for green LED: \(payload.rawValue)")
-            }
+            _ = green.process(payload: payload)
           } else if topic.rawValue == "pico2w/leds/blue/set" {
-            if let state = try? LightState.from(json: payload), let isOn = state.state {
-              blueState = isOn
-            } else {
-              print("failed to decode payload for blue LED: \(payload.rawValue)")
-            }
+            _ = blue.process(payload: payload)
           } else {
             print("unknown topic: \(topic.rawValue)")
           }
@@ -170,10 +137,7 @@ struct App {
     do {
       try client.start()
     } catch {
-      green.pwm(.flicker(), config: pwm)
-      red.pwm(.flicker(), config: pwm)
-      blue.pwm(.flicker(), config: pwm)
-
+      print("failed")
       sleep_ms(5000)
       return
     }
