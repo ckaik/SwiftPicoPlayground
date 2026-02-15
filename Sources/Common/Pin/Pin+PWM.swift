@@ -8,15 +8,11 @@ extension Pin {
   ) -> PinCancellable? {
     let pinId = id
 
-    let registered = PWMInterruptRegistry.shared.register(
+    PWMInterruptRegistry.shared.register(
       pin: pinId,
       config: config,
       computeLevel: computeLevel
     )
-
-    guard registered else {
-      return nil
-    }
 
     gpio_set_function(pinNumber, GPIO_FUNC_PWM)
 

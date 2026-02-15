@@ -67,6 +67,27 @@ export EXTRA_CONFIG_PARAMS="$EXTRA_CONFIG_PARAMS -Xcc -DCYW43_LWIP=0"
     $EXTRA_CONFIG_PARAMS            # This allows passing extra parameters from the command line.
                                     # Used for adding debugging flags based on the cmake configuration.
 
+# Merge Swift embedded runtime libraries (UnicodeDataTables, Concurrency) into libApp.a
+# so the CMake final link step can resolve symbols they provide.
+TOOLCHAIN_PATH="$("$SWIFTLY_PATH" use -p)"
+SWIFT_EMBEDDED_LIBS_DIR="${TOOLCHAIN_PATH}/usr/lib/swift/embedded/${SWIFTPM_TRIPLE}"
+
+LIBAPP_PATH=".build/${SWIFTPM_TRIPLE}/${SWIFT_BUILD_TYPE}/lib${SWIFTPM_PRODUCT}.a"
+LLVM_AR="${TOOLCHAIN_PATH}/usr/bin/llvm-ar"
+
+if [ -d "$SWIFT_EMBEDDED_LIBS_DIR" ] && [ -f "$LIBAPP_PATH" ] && [ -x "$LLVM_AR" ]; then
+    MERGE_TMPDIR=$(mktemp -d)
+    trap "rm -rf '$MERGE_TMPDIR'" EXIT
+    for lib in libswiftUnicodeDataTables.a; do
+        [ -f "$SWIFT_EMBEDDED_LIBS_DIR/$lib" ] || continue
+        LIBDIR="$MERGE_TMPDIR/${lib%.a}"
+        mkdir -p "$LIBDIR"
+        (cd "$LIBDIR" && "$LLVM_AR" x "$SWIFT_EMBEDDED_LIBS_DIR/$lib")
+        "$LLVM_AR" rcs "$LIBAPP_PATH" "$LIBDIR"/*.o
+        echo "  Merged $lib into $LIBAPP_PATH"
+    done
+fi
+
 # Here the application code is linked with the PicoSDK and other imported libraries to produce
 # the final binary that can be flashed to the target device. An UF2 and ELF file are produced.
 finalize_rp2xxx_binary "$@"

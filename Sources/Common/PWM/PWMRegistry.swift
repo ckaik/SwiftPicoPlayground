@@ -24,7 +24,7 @@ final class PWMInterruptRegistry {
     pin: PinID,
     config: PWMConfig,
     computeLevel: @escaping PWMLevelComputation
-  ) -> Bool {
+  ) {
     let slice = pwm_gpio_to_slice_num(pin.rawValue)
     let sliceID = SliceID(rawValue: slice)
     let previous = sliceConfigs[sliceID]
@@ -42,8 +42,6 @@ final class PWMInterruptRegistry {
     configureIRQIfNeeded()
     pwm_clear_irq(slice)
     pwm_set_irq_enabled(slice, true)
-
-    return true
   }
 
   func unregister(pin: PinID) -> Bool {

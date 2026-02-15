@@ -9,6 +9,12 @@ public final class Pin {
     self.id = id
   }
 
+  deinit {
+    if PWMInterruptRegistry.shared.isRegistered(pin: id) {
+      _ = PWMInterruptRegistry.shared.unregister(pin: id)
+    }
+  }
+
   public convenience init(number: UInt32) {
     self.init(id: .init(number))
   }

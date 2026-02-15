@@ -3,6 +3,7 @@ import CPicoSDK
 extension Pin {
   public func turn(on: Bool) {
     initializeIfNeeded()
+    unregisterPWMIfNeeded()
     gpio_put(pinNumber, on)
   }
 
@@ -20,5 +21,10 @@ extension Pin {
 
     gpio_init(pinNumber)
     gpio_set_dir(pinNumber, true)
+  }
+
+  private func unregisterPWMIfNeeded() {
+    guard PWMInterruptRegistry.shared.isRegistered(pin: id) else { return }
+    _ = PWMInterruptRegistry.shared.unregister(pin: id)
   }
 }
