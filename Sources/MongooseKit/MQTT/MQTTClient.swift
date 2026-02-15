@@ -1,4 +1,4 @@
-import Mongoose
+import CMongoose
 
 public final class MQTTClient {
   private let options: MQTTClientOptions

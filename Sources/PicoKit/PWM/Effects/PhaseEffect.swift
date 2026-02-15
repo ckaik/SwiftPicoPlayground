@@ -1,3 +1,5 @@
+import Common
+
 public final class PhaseEffect: PWMEffect {
   public let durationSeconds: Float
 

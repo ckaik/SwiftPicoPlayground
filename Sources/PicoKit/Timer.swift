@@ -1,3 +1,5 @@
+import CPicoSDK
+
 /// Repeating timer wrapper around the Pico SDK alarm API.
 ///
 /// The timer cancels itself automatically when the instance is released, and

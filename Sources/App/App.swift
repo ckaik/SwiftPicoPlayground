@@ -1,5 +1,6 @@
-import Common
+import CPicoSDK
 import MongooseKit
+import PicoKit
 
 public struct Light: MGJSONDecodable {
   public let brightness: UInt8

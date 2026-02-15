@@ -1,4 +1,4 @@
-import Mongoose
+import CMongoose
 
 public enum MGError: Error {
   case wifiConnectFailed

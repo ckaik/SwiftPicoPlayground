@@ -1,4 +1,5 @@
 import CPicoSDK
+import Common
 
 public typealias PWMLevelComputation = (PinID, PWMConfig, UInt32) -> UInt16
 

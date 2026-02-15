@@ -1,4 +1,4 @@
-import Mongoose
+import CMongoose
 
 public struct MQTTMessage {
   public let topic: String

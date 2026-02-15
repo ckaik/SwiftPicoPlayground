@@ -1,3 +1,5 @@
+import Common
+
 public final class FlickerEffect: PWMEffect {
   public let durationSeconds: Float
 

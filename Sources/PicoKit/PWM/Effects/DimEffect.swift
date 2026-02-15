@@ -1,3 +1,5 @@
+import Common
+
 public final class DimEffect: PWMEffect {
   private let brightness: Float
 

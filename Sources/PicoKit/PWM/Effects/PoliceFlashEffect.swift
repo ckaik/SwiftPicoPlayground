@@ -1,3 +1,5 @@
+import Common
+
 public final class PoliceFlashEffect: PWMEffect {
   public let durationSeconds: Float
 

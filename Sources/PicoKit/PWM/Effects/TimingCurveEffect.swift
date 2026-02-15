@@ -1,3 +1,6 @@
+import CMath
+import Common
+
 public enum TimingCurve {
   case linear
   case easeIn

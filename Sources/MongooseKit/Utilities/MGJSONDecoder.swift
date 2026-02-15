@@ -1,4 +1,4 @@
-import Mongoose
+import CMongoose
 
 public protocol MGJSONDecodable {
   init(reader: MGJSONParser) throws(MGJSONDecodingError)

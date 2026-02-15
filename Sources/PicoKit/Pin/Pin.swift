@@ -1,4 +1,5 @@
 import CPicoSDK
+import Common
 
 public final class Pin {
   public let id: PinID

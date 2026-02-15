@@ -1,3 +1,5 @@
+import Common
+
 public final class InjectedDurationEffect: PWMEffect {
   public let durationSeconds: Float
   private let fn: (PWMEffectContext) -> UInt16

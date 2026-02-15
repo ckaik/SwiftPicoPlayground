@@ -1,3 +1,5 @@
+import Common
+
 public final class FadeEffect: PWMEffect {
   public let durationSeconds: Float
   private let startLevel: Float

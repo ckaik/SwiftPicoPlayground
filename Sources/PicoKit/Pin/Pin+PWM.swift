@@ -1,4 +1,5 @@
 import CPicoSDK
+import Common
 
 extension Pin {
   @discardableResult

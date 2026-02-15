@@ -1,3 +1,5 @@
+import Common
+
 public enum PinTag {}
 public typealias PinID = Tagged<PinTag, UInt32>
 

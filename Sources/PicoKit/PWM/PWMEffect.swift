@@ -1,3 +1,5 @@
+import Common
+
 /// A type that produces PWM duty-cycle values over time.
 ///
 /// Conforming types are evaluated once per PWM wrap interrupt by the

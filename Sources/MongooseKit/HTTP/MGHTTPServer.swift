@@ -1,4 +1,4 @@
-import Mongoose
+import CMongoose
 
 public final class MGHTTPServer {
   fileprivate var listener: UnsafeMutablePointer<mg_connection>?

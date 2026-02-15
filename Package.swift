@@ -28,12 +28,14 @@ let package = Package(
         "CPicoSDK",
         "Common",
         "MongooseKit",
+        "PicoKit",
       ]
     ),
+    .target(name: "PicoKit", dependencies: ["CPicoSDK", "Common"]),
     .target(name: "Common", dependencies: ["CPicoSDK", "CMath"]),
     .target(name: "CMath"),
-    .target(name: "Mongoose"),
-    .target(name: "MongooseKit", dependencies: ["Mongoose"]),
+    .target(name: "CMongoose"),
+    .target(name: "MongooseKit", dependencies: ["CMongoose"]),
   ],
   swiftLanguageModes: [.v5]
 )
