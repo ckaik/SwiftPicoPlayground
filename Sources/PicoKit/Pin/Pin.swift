@@ -17,8 +17,8 @@ public final class Pin {
   }
 
   public convenience init(number: UInt32) {
-    self.init(id: .init(number))
+    self.init(id: number)
   }
 
-  lazy private(set) var pinNumber: UInt32 = id.rawValue
+  lazy private(set) var pinNumber: UInt32 = id
 }

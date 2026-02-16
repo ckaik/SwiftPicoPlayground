@@ -101,11 +101,11 @@ struct App {
       state: { _, cmp in
         switch cmp.id {
         case "led.red":
-          return .init(rawValue: red.currentLightState().json)
+          return red.currentLightState().json
         case "led.green":
-          return .init(rawValue: green.currentLightState().json)
+          return green.currentLightState().json
         case "led.blue":
-          return .init(rawValue: blue.currentLightState().json)
+          return blue.currentLightState().json
         default:
           print("unknown component id: \(cmp.id)")
           return nil
@@ -114,16 +114,16 @@ struct App {
       handler: { event in
         switch event {
         case .didReceiveMessage(let topic, let payload):
-          print("received message on topic \(topic.rawValue): \(payload.rawValue)")
+          print("received message on topic \(topic): \(payload)")
 
-          if topic.rawValue == "pico2w/leds/red/set" {
+          if topic == "pico2w/leds/red/set" {
             _ = red.process(payload: payload)
-          } else if topic.rawValue == "pico2w/leds/green/set" {
+          } else if topic == "pico2w/leds/green/set" {
             _ = green.process(payload: payload)
-          } else if topic.rawValue == "pico2w/leds/blue/set" {
+          } else if topic == "pico2w/leds/blue/set" {
             _ = blue.process(payload: payload)
           } else {
-            print("unknown topic: \(topic.rawValue)")
+            print("unknown topic: \(topic)")
           }
         default:
           print("received unknown event: \(event)")

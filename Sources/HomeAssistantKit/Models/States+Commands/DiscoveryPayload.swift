@@ -49,7 +49,7 @@ public struct DiscoveryPayload: State {
   }
 
   public var json: String {
-    let componentsJson = components.map { "\"\($0.key.rawValue)\": \($0.value.json)" }.joined(
+    let componentsJson = components.map { "\"\($0.key)\": \($0.value.json)" }.joined(
       separator: ",")
     return """
       {
@@ -156,7 +156,7 @@ public struct Component: State {
     return """
       {
         \(dataJson.isEmpty ? "" : "\(dataJson),")
-        "unique_id": "\(id.rawValue)",
+        "unique_id": "\(id)",
         "p": "\(kind.rawValue)",
         "name": "\(name)",
         "stat_t": "\(stateTopic)",

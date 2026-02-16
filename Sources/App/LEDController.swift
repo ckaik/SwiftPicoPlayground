@@ -25,7 +25,8 @@ final class LEDController {
     state = .off
   }
 
-  func on(@Clamped at brightness: Float = 1) {
+  func on(at brightness: Float = 1) {
+    let brightness = brightness.clamped()
     pin.pwm(.dim(brightness: brightness * 255), config: Self.pwmConfig)
     state = .on(brightness: UInt8(brightness * 255))
   }

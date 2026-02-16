@@ -1,7 +1,2 @@
-import Common
-
-public enum PinTag {}
-public typealias PinID = Tagged<PinTag, UInt32>
-
-public enum SliceTag {}
-public typealias SliceID = Tagged<SliceTag, UInt32>
+public typealias PinID = UInt32
+public typealias SliceID = UInt32

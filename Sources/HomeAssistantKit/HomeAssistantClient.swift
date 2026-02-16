@@ -49,7 +49,7 @@ public final class HomeAssistantClient {
 
   private var isRunning = false
 
-  lazy private var discoveryTopic = { MQTTTopicName(rawValue: discovery.topic) }()
+  lazy private var discoveryTopic = { MQTTTopicName(discovery.topic) }()
   lazy private var discoveryPayloadString = { discoveryPayload.json }()
 
   public init(
@@ -92,18 +92,18 @@ public final class HomeAssistantClient {
   private func onConnect() {
     process(effect: handler(.onConnect))
 
-    mqtt.publish(topic: discoveryTopic.rawValue, payload: discoveryPayloadString)
+    mqtt.publish(discoveryPayloadString, on: discoveryTopic)
 
     for (componentId, component) in discoveryPayload.components {
       // Publish initial state
       if let state = state(componentId, component) {
-        mqtt.publish(topic: component.stateTopic, payload: state.rawValue)
+        mqtt.publish(state, on: component.stateTopic)
       }
 
       mqtt.on(component.commandTopic) { [self] msg in  // yes, a retain cycle :|
         // Process incoming command
-        let topic = MQTTTopicName(rawValue: component.commandTopic)
-        let payload = JSONString(rawValue: msg.payloadString ?? "")
+        let topic = MQTTTopicName(component.commandTopic)
+        let payload = JSONString(msg.payloadString ?? "")
         let effect = handler(.didReceiveMessage(topic: topic, payload: payload))
 
         // Process side effects
@@ -111,7 +111,7 @@ public final class HomeAssistantClient {
 
         // Publish updated state after processing the command
         if let state = state(componentId, component) {
-          mqtt.publish(topic: component.stateTopic, payload: state.rawValue)
+          mqtt.publish(state, on: component.stateTopic)
         }
       }
     }
@@ -122,18 +122,15 @@ public final class HomeAssistantClient {
     case .none:
       break
     case .publish(let topic, let content):
-      mqtt.publish(topic: topic.rawValue, payload: content.rawValue)
+      mqtt.publish(content, on: topic)
       break
     case .publishMultiple(let messages):
       for (topic, content) in messages {
-        mqtt.publish(topic: topic.rawValue, payload: content.rawValue)
+        mqtt.publish(content, on: topic)
       }
     }
   }
 }
 
-public enum MQTTTopicNameTag {}
-public typealias MQTTTopicName = Tagged<MQTTTopicNameTag, String>
-
-public enum JSONStringTag {}
-public typealias JSONString = Tagged<JSONStringTag, String>
+public typealias MQTTTopicName = String
+public typealias JSONString = String

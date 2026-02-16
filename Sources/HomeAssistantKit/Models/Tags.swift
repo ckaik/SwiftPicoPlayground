@@ -1,7 +1,2 @@
-import Common
-
-public enum InternalComponentIDTag {}
-public typealias InternalComponentID = Tagged<InternalComponentIDTag, String>
-
-public enum HomeAssistantComponentIDTag {}
-public typealias HomeAssistantComponentID = Tagged<HomeAssistantComponentIDTag, String>
+public typealias InternalComponentID = String
+public typealias HomeAssistantComponentID = String

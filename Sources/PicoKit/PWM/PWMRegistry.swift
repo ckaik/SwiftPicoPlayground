@@ -16,8 +16,8 @@ final class PWMInterruptRegistry {
   static let shared = PWMInterruptRegistry()
 
   func isRegistered(pin: PinID) -> Bool {
-    let slice = pwm_gpio_to_slice_num(pin.rawValue)
-    let sliceID = SliceID(rawValue: slice)
+    let slice = pwm_gpio_to_slice_num(pin)
+    let sliceID = SliceID(slice)
     return handlers[sliceID]?[pin] != nil
   }
 
@@ -26,8 +26,8 @@ final class PWMInterruptRegistry {
     config: PWMConfig,
     computeLevel: @escaping PWMLevelComputation
   ) {
-    let slice = pwm_gpio_to_slice_num(pin.rawValue)
-    let sliceID = SliceID(rawValue: slice)
+    let slice = pwm_gpio_to_slice_num(pin)
+    let sliceID = SliceID(slice)
     let previous = sliceConfigs[sliceID]
 
     if let previous, previous != config {
@@ -46,14 +46,14 @@ final class PWMInterruptRegistry {
   }
 
   func unregister(pin: PinID) -> Bool {
-    let slice = pwm_gpio_to_slice_num(pin.rawValue)
-    let sliceID = SliceID(rawValue: slice)
+    let slice = pwm_gpio_to_slice_num(pin)
+    let sliceID = SliceID(slice)
     guard var pinHandlers = handlers[sliceID], pinHandlers.removeValue(forKey: pin) != nil else {
       return false
     }
 
     handlers[sliceID] = pinHandlers.isEmpty ? nil : pinHandlers
-    pwm_set_gpio_level(pin.rawValue, 0)
+    pwm_set_gpio_level(pin, 0)
 
     if pinHandlers.isEmpty {
       sliceConfigs[sliceID] = nil
@@ -79,7 +79,7 @@ final class PWMInterruptRegistry {
 
     while pending != 0 {
       let sliceIndex = UInt32(pending.trailingZeroBitCount)
-      let sliceID = SliceID(rawValue: sliceIndex)
+      let sliceID = SliceID(sliceIndex)
       let wrapCount = (wrapCounts[sliceID] ?? 0) &+ 1
 
       wrapCounts[sliceID] = wrapCount
@@ -99,7 +99,7 @@ private typealias SliceHandlers = [PinID: PWMLevelComputation]
 extension SliceHandlers {
   func drive(config: PWMConfig, wrapCount: UInt32) {
     for (pin, computeLevel) in self {
-      pwm_set_gpio_level(pin.rawValue, computeLevel(pin, config, wrapCount))
+      pwm_set_gpio_level(pin, computeLevel(pin, config, wrapCount))
     }
   }
 }

@@ -1,8 +1,9 @@
 import Common
 
 extension PWMEffect {
-  public static func dim(@Clamped brightness: Float) -> Self {
-    Self { context in
+  public static func dim(brightness: Float) -> Self {
+    let brightness = brightness.clamped()
+    return Self { context in
       let gamma = brightness * brightness
       let scaled = Float(context.config.wrap) * gamma
       return UInt16(min(Float(context.config.wrap), max(0, scaled)))

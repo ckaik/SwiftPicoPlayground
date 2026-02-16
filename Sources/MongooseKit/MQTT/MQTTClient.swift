@@ -52,7 +52,7 @@ public final class MQTTClient {
     subscribe(to: topic)
   }
 
-  public func publish(topic: String, payload: String) {
+  public func publish(_ payload: String, on topic: String) {
     guard let conn = currentConnection else {
       // TODO: should we buffer messages and send them when the connection is back?
       return

@@ -73,6 +73,8 @@ cat > "${PACKAGE_PATH}/.sourcekit-lsp/config.json" <<EOF
       "Embedded"
     ],
     "cCompilerFlags": [
+      "--sysroot",
+      "${SDK_PATH}",
       "-DCYW43_LWIP=0"
     ]
   },

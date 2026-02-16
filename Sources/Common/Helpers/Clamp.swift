@@ -2,6 +2,11 @@ extension Comparable {
   public func clamped(to range: ClosedRange<Self>) -> Self {
     min(max(self, range.lowerBound), range.upperBound)
   }
+
+  public func clamped(to range: ClosedRange<Self> = 0 ... 1) -> Self
+  where Self: BinaryFloatingPoint {
+    min(max(self, range.lowerBound), range.upperBound)
+  }
 }
 
 @propertyWrapper

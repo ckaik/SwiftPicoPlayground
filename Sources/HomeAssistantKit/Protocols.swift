@@ -5,7 +5,7 @@ public protocol Command: MGJSONDecodable {}
 
 extension Command {
   public static func from(json: JSONString) throws(MGJSONDecodingError) -> Self {
-    let parser = MGJSONParser(payload: Array(json.rawValue.utf8))
+    let parser = MGJSONParser(payload: Array(json.utf8))
     return try Self(reader: parser)
   }
 }
