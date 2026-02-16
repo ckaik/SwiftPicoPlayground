@@ -108,11 +108,6 @@ public final class HomeAssistantClient {
 
         // Process side effects
         process(effect: effect)
-
-        // Publish updated state after processing the command
-        if let state = state(componentId, component) {
-          mqtt.publish(state, on: component.stateTopic)
-        }
       }
     }
   }

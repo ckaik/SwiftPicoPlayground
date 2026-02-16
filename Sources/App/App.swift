@@ -53,89 +53,54 @@ struct App {
 
     MGManager.shared.waitForReady()
 
-    let client = HomeAssistantClient(
+    let router = HomeAssistantRouter(
       mqttConfig: MQTTConfig(
         host: "10.0.0.101",
         username: Secrets.mqttUser,
         password: Secrets.mqttPassword
       ),
-      discovery: DiscoveryConfig(objectId: "Pico"),
-      discoveryPayload: DiscoveryPayload(
-        qos: 0,
-        device: Device(
-          ids: "pico2w",
-          name: "Pico",
-          manufacturer: "CKAIK",
-          serialNumber: "1337",
-          hardwareVersion: "0.1.0",
-          softwareVersion: "0.1.0",
-          configurationUrl: "https://github.com/ckaik/SwiftPicoPlayground"
+      deviceId: "pico2w",
+      deviceName: "Pico",
+      objectId: "Pico",
+      lights: [
+        .init(
+          key: "red",
+          componentID: "led.red",
+          name: "Rote LED",
+          discoveryData: ledConfig,
+          initialState: red.currentLightState(),
+          onCommand: red.process
         ),
-        components: [
-          "red": Component(
-            id: "led.red",
-            kind: .light,
-            name: "Rote LED",
-            stateTopic: "pico2w/leds/red/state",
-            commandTopic: "pico2w/leds/red/set",
-            data: ledConfig
-          ),
-          "green": Component(
-            id: "led.green",
-            kind: .light,
-            name: "Grüne LED",
-            stateTopic: "pico2w/leds/green/state",
-            commandTopic: "pico2w/leds/green/set",
-            data: ledConfig
-          ),
-          "blue": Component(
-            id: "led.blue",
-            kind: .light,
-            name: "Blaue LED",
-            stateTopic: "pico2w/leds/blue/state",
-            commandTopic: "pico2w/leds/blue/set",
-            data: ledConfig
-          ),
-        ]
-      ),
-      state: { _, cmp in
-        switch cmp.id {
-        case "led.red":
-          return red.currentLightState().json
-        case "led.green":
-          return green.currentLightState().json
-        case "led.blue":
-          return blue.currentLightState().json
-        default:
-          print("unknown component id: \(cmp.id)")
-          return nil
-        }
-      },
-      handler: { event in
-        switch event {
-        case .didReceiveMessage(let topic, let payload):
-          print("received message on topic \(topic): \(payload)")
-
-          if topic == "pico2w/leds/red/set" {
-            _ = red.process(payload: payload)
-          } else if topic == "pico2w/leds/green/set" {
-            _ = green.process(payload: payload)
-          } else if topic == "pico2w/leds/blue/set" {
-            _ = blue.process(payload: payload)
-          } else {
-            print("unknown topic: \(topic)")
-          }
-        default:
-          print("received unknown event: \(event)")
-        }
-
-        return .none
-      }
+        .init(
+          key: "green",
+          componentID: "led.green",
+          name: "Grüne LED",
+          discoveryData: ledConfig,
+          initialState: green.currentLightState(),
+          onCommand: green.process
+        ),
+        .init(
+          key: "blue",
+          componentID: "led.blue",
+          name: "Blaue LED",
+          discoveryData: ledConfig,
+          initialState: blue.currentLightState(),
+          onCommand: blue.process
+        ),
+      ],
+      device: .init(
+        manufacturer: "CKAIK",
+        serialNumber: "1337",
+        hardwareVersion: "0.1.0",
+        softwareVersion: "0.1.0",
+        configurationUrl: "https://github.com/ckaik/SwiftPicoPlayground"
+      )
     )
+
     print("starting Home Assistant client")
 
     do {
-      try client.start()
+      try router.start()
     } catch {
       print("failed")
       sleep_ms(5000)
