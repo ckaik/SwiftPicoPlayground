@@ -11,6 +11,12 @@ let ledConfig = [
   "enabled_by_default": JSONValue.bool(true),
   "effect": JSONValue.bool(true),
   "effect_list": JSONValue.array([
+    .string("Breathe"),
+    .string("Strobe"),
+    .string("Heartbeat"),
+    .string("Ping Pong Fade"),
+    .string("Candle"),
+    .string("Pulse Hold"),
     .string("Police Flash"),
     .string("Flicker"),
   ]),

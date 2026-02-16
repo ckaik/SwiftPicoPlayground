@@ -27,7 +27,7 @@ final class LEDController {
 
   func on(at brightness: Float = 1) {
     let brightness = brightness.clamped()
-    pin.pwm(.dim(brightness: brightness * 255), config: Self.pwmConfig)
+    pin.pwm(.dim(brightness: brightness), config: Self.pwmConfig)
     state = .on(brightness: UInt8(brightness * 255))
   }
 
@@ -71,6 +71,18 @@ final class LEDController {
         pin.pwm(.policeFlash(), config: Self.pwmConfig)
       case "flicker":
         pin.pwm(.flicker(), config: Self.pwmConfig)
+      case "breathe":
+        pin.pwm(.breathe(), config: Self.pwmConfig)
+      case "strobe":
+        pin.pwm(.strobe(), config: Self.pwmConfig)
+      case "heartbeat":
+        pin.pwm(.heartbeat(), config: Self.pwmConfig)
+      case "ping pong fade":
+        pin.pwm(.pingPongFade(), config: Self.pwmConfig)
+      case "candle":
+        pin.pwm(.candle(), config: Self.pwmConfig)
+      case "pulse hold":
+        pin.pwm(.pulseHold(), config: Self.pwmConfig)
       default:
         self.state = .off
         pin.pwm(.off, config: Self.pwmConfig)

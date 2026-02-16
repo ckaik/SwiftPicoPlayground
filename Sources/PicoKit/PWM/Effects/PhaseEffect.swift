@@ -11,7 +11,7 @@ extension PWMEffect {
     offsets.reserveCapacity(phases.count)
 
     for phase in phases {
-      offsets.append(phase.durationSeconds)
+      offsets.append(cumulativeDuration)
       cumulativeDuration += PWMConstants.clampDuration(phase.durationSeconds)
     }
 
