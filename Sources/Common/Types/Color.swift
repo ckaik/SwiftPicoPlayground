@@ -10,21 +10,17 @@ public struct Color {
   }
 
   public init(
-    @Clamped(in: 0.0 ... 360.0) hue: Float,
-    @Clamped saturation: Float,
-    @Clamped luminosity: Float
+    hue: Float,
+    saturation: Float,
+    luminosity: Float
   ) {
     let (r, g, b) = hslToRgb(
-      hue: hue,
-      saturation: saturation,
-      luminosity: luminosity
+      hue: hue.clamped(to: 0.0 ... 360.0),
+      saturation: saturation.clamped(to: 0 ... 1),
+      luminosity: luminosity.clamped(to: 0 ... 1)
     )
 
-    self.init(
-      red: r,
-      green: g,
-      blue: b
-    )
+    self.init(red: r, green: g, blue: b)
   }
 }
 
@@ -53,11 +49,7 @@ extension Color {
 
   var hsl: HSL {
     let (h, s, l) = rgbToHsl(red: red, green: green, blue: blue)
-    return HSL(
-      hue: h,
-      saturation: s,
-      luminosity: l
-    )
+    return HSL(hue: h, saturation: s, luminosity: l)
   }
 }
 
@@ -91,11 +83,11 @@ private func rgbToHsl(
 }
 
 private func hslToRgb(
-  @Clamped(in: 0 ... 360) hue: Float,
+  hue: Float,
   @Clamped saturation: Float,
   @Clamped luminosity: Float
 ) -> (red: Float, green: Float, blue: Float) {
-  var wrappedHue = hue.truncatingRemainder(dividingBy: 360)
+  var wrappedHue = hue.clamped(to: 0 ... 360).truncatingRemainder(dividingBy: 360)
   if wrappedHue < 0 { wrappedHue += 360 }
 
   let chroma = (1 - abs(2 * luminosity - 1)) * saturation

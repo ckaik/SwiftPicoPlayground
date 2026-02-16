@@ -42,6 +42,7 @@ fi
     --dump-prep-script "$PREPARATION_SCRIPT_PATH" \
     --allow-writing-to-package-directory \
     --disable-vscode-settings \
+    --disable-sourcekit-lsp-settings \
     --allow-network-connections all  # Used to download PicoSDK, toolchain and other dependencies.
 
 # The preparation script is dumped to PREPARATION_SCRIPT_PATH so it can be inspected.
@@ -54,6 +55,31 @@ export CPICOSDK_pimoroni_pico_plus2_w_rp2350_IMPORTED_LIBS_MORE="pico_cyw43_arch
 
 # Disable lwIP integration for cyw43_arch (Mongoose provides its own TCP/IP).
 export EXTRA_CONFIG_PARAMS="$EXTRA_CONFIG_PARAMS -Xcc -DCYW43_LWIP=0"
+
+# Keep SourceKit-LSP aligned with the embedded build configuration.
+mkdir -p "${PACKAGE_PATH}/.sourcekit-lsp"
+cat > "${PACKAGE_PATH}/.sourcekit-lsp/config.json" <<EOF
+{
+  "swiftPM": {
+    "buildSystem": "native",
+    "scratchPath": ".build",
+    "configuration": "${SWIFT_BUILD_TYPE}",
+    "triple": "${SWIFTPM_TRIPLE}",
+    "toolsets": [
+      "${TOOLSET_PATH}"
+    ],
+    "swiftCompilerFlags": [
+      "-enable-experimental-feature",
+      "Embedded"
+    ],
+    "cCompilerFlags": [
+      "-DCYW43_LWIP=0"
+    ]
+  },
+  "backgroundIndexing": false,
+  "backgroundPreparationMode": "enabled"
+}
+EOF
 
 # Make sure the selected swift toolchain is installed.
 "$SWIFTLY_PATH" install
