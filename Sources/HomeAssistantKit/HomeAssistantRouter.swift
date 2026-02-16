@@ -71,6 +71,16 @@ public final class HomeAssistantRouter {
 
   private var client: HomeAssistantClient?
 
+  private func debug(_ message: String) {
+    print("[HomeAssistantRouter] \(message)")
+  }
+
+  private func preview(_ value: String, maxLength: Int = 180) -> String {
+    guard value.count > maxLength else { return value }
+    let index = value.index(value.startIndex, offsetBy: maxLength)
+    return "\(value[..<index])..."
+  }
+
   public init(
     mqttConfig: MQTTConfig,
     deviceId: String,
@@ -139,17 +149,26 @@ public final class HomeAssistantRouter {
       ),
       components: components
     )
+
+    debug(
+      "initialized with \(lightsByComponentID.count) light(s), discovery topic \(discovery.topic)"
+    )
   }
 
   public func setup() {
-    guard client == nil else { return }
+    guard client == nil else {
+      debug("setup skipped: client already initialized")
+      return
+    }
+
+    debug("setting up Home Assistant client")
 
     client = HomeAssistantClient(
       mqttConfig: mqttConfig,
       discovery: discovery,
       discoveryPayload: discoveryPayload,
       state: { componentID, _ in
-        statesByComponentID[componentID]?.json
+        self.statesByComponentID[componentID]?.json
       },
       handler: handle(event:)
     )
@@ -157,32 +176,44 @@ public final class HomeAssistantRouter {
 
   public func start() throws(HomeAssistantError) {
     if client == nil {
+      debug("start requested before setup; creating client")
       setup()
     }
 
     guard let client else { return }
+    debug("starting Home Assistant client")
     try client.start()
+    debug("start request sent to MQTT client")
   }
 
   private func handle(event: Event) -> Effect {
     switch event {
     case .onConnect:
+      debug("MQTT connected")
       return .none
 
     case .didReceiveMessage(let topic, let payload):
+      debug("received message on topic: \(topic), payload: \(preview(payload))")
+
       guard let light = lightsByCommandTopic[topic] else {
+        debug("no light registered for command topic: \(topic)")
         return .none
       }
 
       guard let command = try? LightState.from(json: payload) else {
+        debug("failed to decode LightState from payload for component \(light.componentID)")
         return .none
       }
 
       guard let newState = light.onCommand(command) else {
+        debug("onCommand returned nil for component \(light.componentID)")
         return .none
       }
 
       statesByComponentID[light.componentID] = newState
+      debug(
+        "publishing new state for component \(light.componentID) to \(light.stateTopic): \(preview(newState.json))"
+      )
       return .publish(topic: light.stateTopic, content: newState.json)
     }
   }
