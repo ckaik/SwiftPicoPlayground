@@ -35,12 +35,12 @@ public struct DiscoveryPayload: State {
   public var qos: Int
   public var device: Device
   public var origin: Origin
-  public var components: [HomeAssistantComponentID: Component]
+  public var components: [String: Component]
 
   public init(
     qos: Int = 0,
     device: Device,
-    components: [HomeAssistantComponentID: Component]
+    components: [String: Component]
   ) {
     self.qos = qos
     self.device = device
@@ -127,7 +127,7 @@ public struct Component: State {
     case light
   }
 
-  public var id: InternalComponentID
+  public var id: String
   public var kind: Kind
   public var name: String
   public var stateTopic: String
@@ -135,7 +135,7 @@ public struct Component: State {
   public var data: [String: JSONValue]?
 
   public init(
-    id: InternalComponentID,
+    id: String,
     kind: Kind,
     name: String,
     stateTopic: String,

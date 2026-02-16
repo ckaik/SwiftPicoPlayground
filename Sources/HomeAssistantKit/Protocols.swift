@@ -4,7 +4,7 @@ import MongooseKit
 public protocol Command: MGJSONDecodable {}
 
 extension Command {
-  public static func from(json: JSONString) throws(MGJSONDecodingError) -> Self {
+  public static func from(json: String) throws(MGJSONDecodingError) -> Self {
     let parser = MGJSONParser(payload: Array(json.utf8))
     return try Self(reader: parser)
   }

@@ -39,7 +39,7 @@ final class LEDController {
     }
   }
 
-  func process(payload: JSONString) -> LightState {
+  func process(payload: String) -> LightState {
     guard let newState = try? LightState.from(json: payload) else {
       return currentLightState()
     }

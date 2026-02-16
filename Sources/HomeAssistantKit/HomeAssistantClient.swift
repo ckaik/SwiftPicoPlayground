@@ -27,19 +27,19 @@ public struct DiscoveryConfig {
 
 public enum Effect {
   case none
-  case publish(topic: MQTTTopicName, content: JSONString)
-  case publishMultiple([MQTTTopicName: JSONString])
+  case publish(topic: String, content: String)
+  case publishMultiple([String: String])
 }
 
 public enum Event {
   case onConnect
-  case didReceiveMessage(topic: MQTTTopicName, payload: JSONString)
+  case didReceiveMessage(topic: String, payload: String)
 }
 
 public final class HomeAssistantClient {
   public typealias Handler = (_ event: Event) -> Effect
-  public typealias StateHandler = (_ componentId: HomeAssistantComponentID, _ component: Component)
-    -> JSONString?
+  public typealias StateHandler = (_ componentId: String, _ component: Component)
+    -> String?
 
   let mqtt: MQTTClient
   let discovery: DiscoveryConfig
@@ -49,7 +49,7 @@ public final class HomeAssistantClient {
 
   private var isRunning = false
 
-  lazy private var discoveryTopic = { MQTTTopicName(discovery.topic) }()
+  lazy private var discoveryTopic = { discovery.topic }()
   lazy private var discoveryPayloadString = { discoveryPayload.json }()
 
   public init(
@@ -102,8 +102,8 @@ public final class HomeAssistantClient {
 
       mqtt.on(component.commandTopic) { [self] msg in  // yes, a retain cycle :|
         // Process incoming command
-        let topic = MQTTTopicName(component.commandTopic)
-        let payload = JSONString(msg.payloadString ?? "")
+        let topic = component.commandTopic
+        let payload = msg.payloadString ?? ""
         let effect = handler(.didReceiveMessage(topic: topic, payload: payload))
 
         // Process side effects
@@ -131,6 +131,3 @@ public final class HomeAssistantClient {
     }
   }
 }
-
-public typealias MQTTTopicName = String
-public typealias JSONString = String
