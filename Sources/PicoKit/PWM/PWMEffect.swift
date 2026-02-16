@@ -1,56 +1,13 @@
 import Common
 
-/// A type that produces PWM duty-cycle values over time.
-///
-/// Conforming types are evaluated once per PWM wrap interrupt by the
-/// ``PWMInterruptRegistry``. Each call to ``level(context:)`` receives the
-/// current timing and hardware state and must return the raw duty-cycle
-/// value (0 … `config.wrap`) to load into the PWM compare register.
-///
-/// Effects are reference types (`AnyObject`) so the registry can store
-/// them without copying mutable internal state such as counters or caches.
-///
-/// ## Creating a Custom Effect
-///
-/// ```swift
-/// final class PulseEffect: PWMEffect {
-///   let durationSeconds: Float = 2
-///
-///   func level(context: PWMEffectContext) -> UInt16 {
-///     let t = context.repeatingProgress(durationSeconds: durationSeconds)
-///     let brightness = (1 - cosf(t * .pi * 2)) / 2
-///     return UInt16(brightness * Float(context.config.wrap))
-///   }
-/// }
-/// ```
-public protocol PWMEffect: AnyObject {
-  /// Computes the PWM level for the current interrupt context.
-  ///
-  /// The returned value is written directly to the PWM slice's compare
-  /// register, so it must be in the range `0 ... context.config.wrap`.
-  /// Values outside that range are typically clamped by the caller.
-  ///
-  /// - Parameter context: A snapshot of the current pin, hardware
-  ///   configuration, and elapsed wrap count provided by the scheduler.
-  /// - Returns: The raw duty-cycle level (`0` = fully off,
-  ///   `context.config.wrap` = fully on).
-  func level(context: PWMEffectContext) -> UInt16
+public struct PWMEffect {
+  public let durationSeconds: Float
+  public let level: (PWMEffectContext) -> UInt16
 
-  /// The nominal duration of one cycle of the effect, in seconds.
-  ///
-  /// Effects that loop (e.g. ``FadeEffect``) use this value together with
-  /// ``PWMEffectContext/repeatingProgress(durationSeconds:)`` to determine
-  /// where they are within a cycle. Effects that run once (e.g. a one-shot
-  /// fade) use ``PWMEffectContext/progress(durationSeconds:)`` instead,
-  /// which clamps at `1.0` after this duration elapses.
-  ///
-  /// The default implementation returns `1` second.
-  var durationSeconds: Float { get }
-}
-
-extension PWMEffect {
-  /// Default duration of one second for effects that do not specify their own.
-  public var durationSeconds: Float { 1 }
+  public init(durationSeconds: Float = 1, level: @escaping (PWMEffectContext) -> UInt16) {
+    self.durationSeconds = durationSeconds
+    self.level = level
+  }
 }
 
 /// Immutable snapshot of timing and hardware state passed to a ``PWMEffect``

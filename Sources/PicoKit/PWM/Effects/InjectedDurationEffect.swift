@@ -1,21 +1,7 @@
 import Common
 
-public final class InjectedDurationEffect: PWMEffect {
-  public let durationSeconds: Float
-  private let fn: (PWMEffectContext) -> UInt16
-
-  public init(durationSeconds: Float, level: @escaping (PWMEffectContext) -> UInt16) {
-    fn = level
-    self.durationSeconds = PWMConstants.clampDuration(durationSeconds)
-  }
-
-  public func level(context: PWMEffectContext) -> UInt16 {
-    fn(context)
-  }
-}
-
 extension PWMEffect {
-  public func withDuration(_ durationSeconds: Float) -> InjectedDurationEffect {
-    InjectedDurationEffect(durationSeconds: durationSeconds, level: level)
+  public func duration(_ durationSeconds: Float) -> Self {
+    Self(durationSeconds: durationSeconds, level: level)
   }
 }

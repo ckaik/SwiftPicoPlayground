@@ -1,52 +1,38 @@
 import Common
 
-public final class PoliceFlashEffect: PWMEffect {
-  public let durationSeconds: Float
+extension PWMEffect {
+  public func offset(_ offsetMs: Float) -> Self {
+    let offsetSeconds = max(0, offsetMs / 1000)
 
-  private let phase: PhaseEffect
-  private let offsetSeconds: Float
+    return Self { context in
+      guard offsetSeconds > 0 else {
+        return level(context)
+      }
 
-  public init(
-    onMs: Float = 60,
-    gapMs: Float = 40,
-    pauseMs: Float = 200,
-    offsetMs: Float = 0
-  ) {
-    let onSeconds = PWMConstants.clampDuration(onMs / 1000)
-    let gapSeconds = PWMConstants.clampDuration(gapMs / 1000)
-    let pauseSeconds = PWMConstants.clampDuration(pauseMs / 1000)
+      let adjustedSeconds = context.elapsedSeconds + offsetSeconds
+      let adjustedContext = context.withElapsedSeconds(adjustedSeconds)
 
-    phase = PhaseEffect(
-      .on.withDuration(onSeconds),
-      .off.withDuration(gapSeconds),
-      .on.withDuration(onSeconds),
-      .off.withDuration(pauseSeconds),
-      repeats: true
-    )
-
-    durationSeconds = phase.durationSeconds
-    offsetSeconds = max(0, offsetMs / 1000)
-  }
-
-  public func level(context: PWMEffectContext) -> UInt16 {
-    guard offsetSeconds > 0 else {
-      return phase.level(context: context)
+      return level(adjustedContext)
     }
-
-    let adjustedSeconds = context.elapsedSeconds + offsetSeconds
-    let adjustedContext = context.withElapsedSeconds(adjustedSeconds)
-
-    return phase.level(context: adjustedContext)
   }
-}
 
-extension PWMEffect where Self == PoliceFlashEffect {
   public static func policeFlash(
     onMs: Float = 60,
     gapMs: Float = 40,
     pauseMs: Float = 200,
     offsetMs: Float = 0
   ) -> Self {
-    PoliceFlashEffect(onMs: onMs, gapMs: gapMs, pauseMs: pauseMs, offsetMs: offsetMs)
+    let onSeconds = PWMConstants.clampDuration(onMs / 1000)
+    let gapSeconds = PWMConstants.clampDuration(gapMs / 1000)
+    let pauseSeconds = PWMConstants.clampDuration(pauseMs / 1000)
+
+    return .phase(
+      Self.on.duration(onSeconds),
+      Self.off.duration(gapSeconds),
+      Self.on.duration(onSeconds),
+      Self.off.duration(pauseSeconds),
+      repeats: true
+    )
+    .offset(offsetMs)
   }
 }

@@ -32,16 +32,17 @@ extension Pin {
 
   @discardableResult
   public func pwm(
-    _ effect: some PWMEffect,
+    _ effect: PWMEffect,
     config: PWMConfig
   ) -> PinCancellable? {
     pwm(config: config) { pinId, config, wrapCount in
       effect.level(
-        context: PWMEffectContext(
+        PWMEffectContext(
           pinId: pinId,
           config: config,
           wrapCount: wrapCount
-        ))
+        )
+      )
     }
   }
 }

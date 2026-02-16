@@ -9,8 +9,8 @@ let package = Package(
   ],
   dependencies: [
     .package(
-      url: "https://github.com/gonzalolarralde/CPicoSDK",
-      exact: "2.2.2",
+      url: "git@github.com:ckaik/CPicoSDK.git",
+      branch: "ai-hang-fix",
       traits: [
         .init(name: "Platform_RP2350"),
         .init(name: "BootStage2_W25Q080"),

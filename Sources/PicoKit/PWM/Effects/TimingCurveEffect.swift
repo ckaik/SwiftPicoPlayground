@@ -28,33 +28,18 @@ public enum TimingCurve {
   }
 }
 
-public final class TimingCurveEffect: PWMEffect {
-  public let durationSeconds: Float
-
-  private let effect: PWMEffect
-  private let curve: TimingCurve
-
-  public init(_ effect: PWMEffect, curve: TimingCurve) {
-    self.effect = effect
-    self.curve = curve
-    self.durationSeconds = PWMConstants.clampDuration(effect.durationSeconds)
-  }
-
-  public func level(context: PWMEffectContext) -> UInt16 {
-    let elapsed = context.elapsedSeconds
-    let normalized = elapsed / durationSeconds
-    let cycles = floorf(normalized)
-    let fraction = normalized - cycles
-    let curved = curve.apply(fraction)
-    let adjustedElapsed = (cycles + curved) * durationSeconds
-    let adjustedContext = context.withElapsedSeconds(adjustedElapsed)
-
-    return effect.level(context: adjustedContext)
-  }
-}
-
 extension PWMEffect {
-  public func withTimingCurve(_ curve: TimingCurve) -> TimingCurveEffect {
-    TimingCurveEffect(self, curve: curve)
+  public func curve(_ curve: TimingCurve) -> Self {
+    Self(durationSeconds: durationSeconds) { context in
+      let elapsed = context.elapsedSeconds
+      let normalized = elapsed / durationSeconds
+      let cycles = floorf(normalized)
+      let fraction = normalized - cycles
+      let curved = curve.apply(fraction)
+      let adjustedElapsed = (cycles + curved) * durationSeconds
+      let adjustedContext = context.withElapsedSeconds(adjustedElapsed)
+
+      return level(adjustedContext)
+    }
   }
 }

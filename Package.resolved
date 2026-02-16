@@ -1,13 +1,13 @@
 {
-  "originHash" : "fa121eefd0848e6faedc0f37fe49a302af3212dd7601521055b9ae755b672187",
+  "originHash" : "e0e854e325ae445ad67eda72522ac677f04e14fd0dae9516477582b37238f3fd",
   "pins" : [
     {
       "identity" : "cpicosdk",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gonzalolarralde/CPicoSDK",
+      "location" : "git@github.com:ckaik/CPicoSDK.git",
       "state" : {
-        "revision" : "340e3f1b1f6ccdb873b007509740974fe768b236",
-        "version" : "2.2.2"
+        "branch" : "ai-hang-fix",
+        "revision" : "cce511e485b07884219235b541e2fd22ede88c19"
       }
     },
     {
