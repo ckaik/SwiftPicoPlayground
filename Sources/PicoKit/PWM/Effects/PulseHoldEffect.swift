@@ -6,23 +6,15 @@ extension PWMEffect {
     holdHighSeconds: Float = 0.3,
     rampDownSeconds: Float = 0.25,
     holdLowSeconds: Float = 0.4,
-    minLevel: Float = 0,
-    maxLevel: Float = 1,
+    @Clamped minLevel: Float = 0,
+    @Clamped maxLevel: Float = 1,
     curve: TimingCurve = .easeInOut
   ) -> Self {
-    let up = PWMConstants.clampDuration(rampUpSeconds)
-    let highHold = PWMConstants.clampDuration(holdHighSeconds)
-    let down = PWMConstants.clampDuration(rampDownSeconds)
-    let lowHold = PWMConstants.clampDuration(holdLowSeconds)
-
-    let low = minLevel.clamped()
-    let high = maxLevel.clamped()
-
-    return .phase(
-      .fade(durationSeconds: up, startLevel: low, endLevel: high).curve(curve),
-      .dim(brightness: high).duration(highHold),
-      .fade(durationSeconds: down, startLevel: high, endLevel: low).curve(curve),
-      .dim(brightness: low).duration(lowHold),
+    .phase(
+      .fade(for: rampUpSeconds, startLevel: minLevel, endLevel: maxLevel).curve(curve),
+      .dim(brightness: maxLevel).duration(holdHighSeconds),
+      .fade(for: rampDownSeconds, startLevel: maxLevel, endLevel: minLevel).curve(curve),
+      .dim(brightness: minLevel).duration(holdLowSeconds),
       repeats: true
     )
   }

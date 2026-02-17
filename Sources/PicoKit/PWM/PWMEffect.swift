@@ -1,10 +1,27 @@
 import Common
 
+/// Time-based PWM level generator.
+///
+/// An effect defines a nominal duration and a closure that maps the current
+/// ``PWMEffectContext`` to a hardware level (`UInt16`) on each wrap update.
+///
+/// The closure should typically return values in `0 ... context.config.wrap`.
 public struct PWMEffect {
+  /// Nominal effect duration in seconds.
   public let durationSeconds: Float
+
+  /// Computes the channel level for a given context snapshot.
   public let level: (PWMEffectContext) -> UInt16
 
-  public init(durationSeconds: Float = 1, level: @escaping (PWMEffectContext) -> UInt16) {
+  /// Creates an effect with a duration and level function.
+  ///
+  /// - Parameters:
+  ///   - durationSeconds: Nominal duration in seconds. Clamped by
+  ///     ``PWMDuration`` to at least ``PWMConstants/minDurationSeconds``.
+  ///   - level: Closure that computes a PWM level per context snapshot.
+  public init(
+    @PWMDuration for durationSeconds: Float = 1, level: @escaping (PWMEffectContext) -> UInt16
+  ) {
     self.durationSeconds = durationSeconds
     self.level = level
   }
@@ -22,7 +39,7 @@ public struct PWMEffect {
 ///
 /// - **Wrap count**: The number of times the PWM counter has wrapped since
 ///   the effect was registered. This is the fundamental timing primitive on
-///   the RP2040.
+///   the RP2040 (and conceptually equivalent on RP2350/Pico 2).
 /// - **Elapsed seconds**: Derived from wrap count and the configured
 ///   frequency (`wrapCount / frequencyHz`).
 /// - **Progress helpers**: Convenience methods that map elapsed seconds
@@ -75,10 +92,14 @@ public struct PWMEffectContext {
   /// - Parameter durationSeconds: The time span to convert. Clamped to
   ///   ``PWMConstants/minDurationSeconds`` at minimum.
   /// - Returns: The number of wraps, guaranteed to be at least `1`.
-  public func totalWraps(durationSeconds: Float) -> UInt32 {
+  ///
+  /// Math:
+  /// - `wrapsFloat = frequencyHz * durationSeconds`
+  /// - integer conversion truncates toward zero
+  /// - final value is floored to `1`
+  public func totalWraps(@PWMDuration durationSeconds: Float) -> UInt32 {
     let safeHz = max(1, config.frequencyHz)
-    let safeDuration = PWMConstants.clampDuration(durationSeconds)
-    let wraps = safeHz * safeDuration
+    let wraps = safeHz * durationSeconds
     return UInt32(max(1, Int(wraps)))
   }
 
@@ -92,10 +113,10 @@ public struct PWMEffectContext {
   ///   Clamped to ``PWMConstants/minDurationSeconds`` at minimum.
   /// - Returns: A value in `0 ... 1` representing how far through the
   ///   duration the effect has progressed.
-  public func progress(durationSeconds: Float) -> Float {
-    let safeDuration = PWMConstants.clampDuration(durationSeconds)
-    @Clamped var t = elapsedSeconds / safeDuration
-    return t
+  ///
+  /// Math: `t = clamp(elapsedSeconds / durationSeconds, 0, 1)`
+  public func progress(@PWMDuration durationSeconds: Float) -> Float {
+    (elapsedSeconds / durationSeconds).clamped()
   }
 
   /// Normalised progress through a duration that wraps around each cycle.
@@ -108,10 +129,11 @@ public struct PWMEffectContext {
   ///   ``PWMConstants/minDurationSeconds`` at minimum.
   /// - Returns: A value in `0 ... 1` representing the position within
   ///   the current cycle.
-  public func repeatingProgress(durationSeconds: Float) -> Float {
-    let safeDuration = PWMConstants.clampDuration(durationSeconds)
-    @Clamped var t = elapsedSeconds.truncatingRemainder(dividingBy: safeDuration) / safeDuration
-    return t
+  ///
+  /// Math: `t = (elapsedSeconds mod durationSeconds) / durationSeconds`.
+  /// The result is then clamped into `0 ... 1`.
+  public func repeatingProgress(@PWMDuration durationSeconds: Float) -> Float {
+    (elapsedSeconds.truncatingRemainder(dividingBy: durationSeconds) / durationSeconds).clamped()
   }
 
   /// Returns a new context whose elapsed time is set to the given value.
@@ -121,9 +143,8 @@ public struct PWMEffectContext {
   /// frequency so that ``elapsedSeconds`` on the returned context
   /// equals `seconds` (to floating-point precision).
   ///
-  /// Composite effects such as ``PhaseEffect`` and
-  /// ``TimingCurveEffect`` use this to present a phase-local or
-  /// time-warped context to their inner effects.
+  /// Composite effect pipelines can use this to present transformed
+  /// local time to nested computations.
   ///
   /// - Parameter seconds: Desired elapsed time. Negative values are
   ///   clamped to `0`.

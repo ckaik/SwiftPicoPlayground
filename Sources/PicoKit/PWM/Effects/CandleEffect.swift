@@ -2,7 +2,7 @@ import Common
 
 extension PWMEffect {
   public static func candle(
-    baseLevel: Float = 0.4,
+    @Clamped baseLevel: Float = 0.4,
     intensity: Float = 0.2,
     intervalSeconds: Float = 0.2
   ) -> Self {
@@ -16,10 +16,8 @@ extension PWMEffect {
       return (normalized * 2) - 1
     }
 
-    let safeInterval = PWMConstants.clampDuration(intervalSeconds)
-
-    return Self(durationSeconds: safeInterval) { context in
-      let elapsed = context.elapsedSeconds / safeInterval
+    return Self(for: intervalSeconds) { context in
+      let elapsed = context.elapsedSeconds / intervalSeconds
       let bucket = UInt32(max(0, Int(elapsed)))
       let fraction = elapsed - Float(bucket)
 

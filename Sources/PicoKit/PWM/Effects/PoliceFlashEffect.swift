@@ -1,8 +1,8 @@
 import Common
 
 extension PWMEffect {
-  public func offset(_ offsetMs: Float) -> Self {
-    let offsetSeconds = max(0, offsetMs / 1000)
+  public func offset(_ offsetSeconds: Float) -> Self {
+    let offsetSeconds = max(0, offsetSeconds)
 
     return Self { context in
       guard offsetSeconds > 0 else {
@@ -17,22 +17,18 @@ extension PWMEffect {
   }
 
   public static func policeFlash(
-    onMs: Float = 60,
-    gapMs: Float = 40,
-    pauseMs: Float = 200,
-    offsetMs: Float = 0
+    onSeconds: Float = 0.06,
+    gapSeconds: Float = 0.04,
+    pauseSeconds: Float = 0.2,
+    offsetSeconds: Float = 0
   ) -> Self {
-    let onSeconds = PWMConstants.clampDuration(onMs / 1000)
-    let gapSeconds = PWMConstants.clampDuration(gapMs / 1000)
-    let pauseSeconds = PWMConstants.clampDuration(pauseMs / 1000)
-
     return .phase(
-      Self.on.duration(onSeconds),
-      Self.off.duration(gapSeconds),
-      Self.on.duration(onSeconds),
-      Self.off.duration(pauseSeconds),
+      .on.duration(onSeconds),
+      .off.duration(gapSeconds),
+      .on.duration(onSeconds),
+      .off.duration(pauseSeconds),
       repeats: true
     )
-    .offset(offsetMs)
+    .offset(offsetSeconds)
   }
 }

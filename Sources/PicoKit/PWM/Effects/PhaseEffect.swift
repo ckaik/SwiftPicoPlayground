@@ -20,7 +20,7 @@ extension PWMEffect {
       "Phase effect requires at least one phase and must have a total duration greater than 0"
     )
 
-    return Self(durationSeconds: cumulativeDuration) { context in
+    return Self(for: cumulativeDuration) { context in
       let elapsed = context.elapsedSeconds
       let cycleTime =
         repeats

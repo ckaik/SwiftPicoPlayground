@@ -2,7 +2,7 @@ import Common
 
 extension PWMEffect {
   public static func flicker(
-    baseLevel: Float = 0.5,
+    @Clamped baseLevel: Float = 0.5,
     intensity: Float = 0.4,
     intervalSeconds: Float = 0.08
   ) -> Self {
@@ -16,7 +16,7 @@ extension PWMEffect {
       return (normalized * 2) - 1
     }
 
-    return Self(durationSeconds: intervalSeconds) { context in
+    return Self(for: intervalSeconds) { context in
       let bucket = UInt32(context.elapsedSeconds / intervalSeconds)
       let noise = noise(for: bucket)
       let wrap = Float(context.config.wrap)

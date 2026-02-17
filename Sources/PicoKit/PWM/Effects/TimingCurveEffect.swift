@@ -30,7 +30,7 @@ public enum TimingCurve {
 
 extension PWMEffect {
   public func curve(_ curve: TimingCurve) -> Self {
-    Self(durationSeconds: durationSeconds) { context in
+    Self(for: durationSeconds) { context in
       let elapsed = context.elapsedSeconds
       let normalized = elapsed / durationSeconds
       let cycles = floorf(normalized)
