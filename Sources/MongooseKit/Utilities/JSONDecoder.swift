@@ -316,7 +316,8 @@ private struct JSONTokenInfo {
 
 private func matches(_ input: String, values: [String], caseInsensitive: Bool) -> Bool {
   if caseInsensitive {
-    return values.contains(where: { $0.lowercased() == input.lowercased() })
+    let normalizedInput = input.lowercased()
+    return values.contains(where: { $0.lowercased() == normalizedInput })
   }
 
   return values.contains(input)

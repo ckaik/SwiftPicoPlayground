@@ -1,3 +1,5 @@
+import CMongoose
+
 public protocol JSONEncodable {
   func encode(encoder: JSONEncoder) throws(JSONEncodingError) -> JSONEncodedValue
 }
@@ -21,6 +23,13 @@ public enum BoolEncodingStrategy {
   public static let onOff: BoolEncodingStrategy = .string(trueValue: "ON", falseValue: "OFF")
 }
 
+public enum ObjectKeyOrderingStrategy {
+  case insertion
+  case sorted
+
+  public static let `default`: ObjectKeyOrderingStrategy = .insertion
+}
+
 public enum JSONEncodedValue {
   case string(String)
   case number(String)
@@ -39,13 +48,16 @@ extension JSONEncodedValue: JSONEncodable {
 public struct JSONEncoder {
   public let nilEncodingStrategy: NilEncodingStrategy
   public let boolEncodingStrategy: BoolEncodingStrategy
+  public let objectKeyOrderingStrategy: ObjectKeyOrderingStrategy
 
   public init(
     nilEncodingStrategy: NilEncodingStrategy = .default,
-    boolEncodingStrategy: BoolEncodingStrategy = .default
+    boolEncodingStrategy: BoolEncodingStrategy = .default,
+    objectKeyOrderingStrategy: ObjectKeyOrderingStrategy = .default
   ) {
     self.nilEncodingStrategy = nilEncodingStrategy
     self.boolEncodingStrategy = boolEncodingStrategy
+    self.objectKeyOrderingStrategy = objectKeyOrderingStrategy
   }
 
   public func encode<T: JSONEncodable>(_ value: T) throws(JSONEncodingError) -> [UInt8] {
@@ -79,7 +91,11 @@ public struct JSONEncoder {
       throw .invalidNumber(path: path)
     }
 
-    return .number(String(number))
+    guard let formatted = formatNumber(number) else {
+      throw .invalidNumber(path: path)
+    }
+
+    return .number(formatted)
   }
 
   @_disfavoredOverload
@@ -137,21 +153,51 @@ public struct JSONEncoder {
 
       return "[\(rendered.joined(separator: ","))]"
     case .object(let object):
-      let keys = object.keys.sorted()
       var rendered: [String] = []
-      rendered.reserveCapacity(keys.count)
+      rendered.reserveCapacity(object.count)
 
-      for key in keys {
-        guard let element = object[key] else {
-          continue
+      switch objectKeyOrderingStrategy {
+      case .insertion:
+        for (key, element) in object {
+          let encodedKey = "\"\(escape(key))\""
+          let encodedValue = try render(element, path: "\(path).\(key)")
+          rendered.append("\(encodedKey):\(encodedValue)")
         }
+      case .sorted:
+        let keys = object.keys.sorted()
+        for key in keys {
+          guard let element = object[key] else {
+            continue
+          }
 
-        let encodedKey = "\"\(escape(key))\""
-        let encodedValue = try render(element, path: "\(path).\(key)")
-        rendered.append("\(encodedKey):\(encodedValue)")
+          let encodedKey = "\"\(escape(key))\""
+          let encodedValue = try render(element, path: "\(path).\(key)")
+          rendered.append("\(encodedKey):\(encodedValue)")
+        }
       }
 
       return "{\(rendered.joined(separator: ","))}"
+    }
+  }
+
+  private func formatNumber(_ value: Double) -> String? {
+    var buffer = [CChar](repeating: 0, count: 32)
+    let didFormat = buffer.withUnsafeMutableBufferPointer { rawBuffer in
+      guard let baseAddress = rawBuffer.baseAddress else {
+        return false
+      }
+      return swift_mg_format_double(value, baseAddress, rawBuffer.count)
+    }
+
+    guard didFormat else {
+      return nil
+    }
+
+    return buffer.withUnsafeBufferPointer { rawBuffer in
+      guard let baseAddress = rawBuffer.baseAddress else {
+        return nil
+      }
+      return String(validatingUTF8: baseAddress)
     }
   }
 
