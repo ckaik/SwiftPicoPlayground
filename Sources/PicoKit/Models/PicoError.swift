@@ -43,5 +43,5 @@ public enum PicoError: Int32, Error {
   /// Resource is already in use.
   case resourceInUse = -21
   /// Non-standard fallback value for unknown error codes.
-  case unknown = 1337
+  case unknown = -1337
 }
