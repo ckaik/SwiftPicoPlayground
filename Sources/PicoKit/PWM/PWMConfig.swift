@@ -42,3 +42,7 @@ public struct PWMConfig: Equatable {
     self.wrap = wrap
   }
 }
+
+extension PWMConfig {
+  public static let `default` = PWMConfig(frequencyHz: 1000, wrap: 4095)
+}

@@ -3,31 +3,29 @@ import HomeAssistantKit
 import PicoKit
 
 final class LEDController {
-  static let pwmConfig = PWMConfig(frequencyHz: 1000, wrap: 4095)
-
   public enum State {
     case on(brightness: UInt8)
     case off
     case effect(String)
   }
 
-  private let pin: Pin
+  private let output: PWMOutput
   private(set) var state: State
 
-  init(pin: Pin) {
-    self.pin = pin
+  init(output: PWMOutput) {
+    self.output = output
     state = .off
-    pin.pwm(.off, config: Self.pwmConfig)
+    output.start(effect: .off)
   }
 
   func off() {
-    pin.pwm(.off, config: Self.pwmConfig)
+    output.start(effect: .off)
     state = .off
   }
 
   func on(at brightness: Float = 1) {
     let brightness = brightness.clamped()
-    pin.pwm(.dim(brightness: brightness), config: Self.pwmConfig)
+    output.start(effect: .dim(brightness: brightness))
     state = .on(brightness: UInt8(brightness * 255))
   }
 
@@ -54,14 +52,12 @@ final class LEDController {
       let isOn = state.state,
       isOn
     else {
-      pin.pwm(.off, config: Self.pwmConfig)
-      self.state = .off
-
+      off()
       return .init(state: false)
     }
 
     if let brightness = state.brightness {
-      pin.pwm(.dim(brightness: Float(brightness) / 255), config: Self.pwmConfig)
+      output.start(effect: .dim(brightness: Float(brightness) / 255))
       self.state = .on(brightness: brightness)
 
       return .init(state: true, brightness: brightness)
@@ -70,24 +66,24 @@ final class LEDController {
     if let effect = state.effect {
       switch effect.lowercased() {
       case "police flash":
-        pin.pwm(.policeFlash(), config: Self.pwmConfig)
+        output.start(effect: .policeFlash())
       case "flicker":
-        pin.pwm(.flicker(), config: Self.pwmConfig)
+        output.start(effect: .flicker())
       case "breathe":
-        pin.pwm(.breathe(), config: Self.pwmConfig)
+        output.start(effect: .breathe())
       case "strobe":
-        pin.pwm(.strobe(), config: Self.pwmConfig)
+        output.start(effect: .strobe())
       case "heartbeat":
-        pin.pwm(.heartbeat(), config: Self.pwmConfig)
+        output.start(effect: .heartbeat())
       case "ping pong fade":
-        pin.pwm(.pingPongFade(), config: Self.pwmConfig)
+        output.start(effect: .pingPongFade())
       case "candle":
-        pin.pwm(.candle(), config: Self.pwmConfig)
+        output.start(effect: .candle())
       case "pulse hold":
-        pin.pwm(.pulseHold(), config: Self.pwmConfig)
+        output.start(effect: .pulseHold())
       default:
         self.state = .off
-        pin.pwm(.off, config: Self.pwmConfig)
+        output.start(effect: .off)
         return .init(state: false)
       }
 
@@ -95,8 +91,7 @@ final class LEDController {
       return .init(state: true, brightness: 255, effect: effect)
     }
 
-    pin.pwm(.on, config: Self.pwmConfig)
-    self.state = .on(brightness: 255)
+    on(at: 1)
     return .init(state: true, brightness: 255)
   }
 }

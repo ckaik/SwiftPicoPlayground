@@ -8,7 +8,8 @@ import Common
 ///   - config: Active shared slice configuration.
 ///   - wrapCount: Number of wrap interrupts since registration.
 /// - Returns: Channel level, typically in `0 ... config.wrap`.
-public typealias PWMLevelComputation = (PinID, PWMConfig, UInt32) -> UInt16
+public typealias PWMLevelComputation = (_ pin: PinID, _ config: PWMConfig, _ wrapCount: UInt32) ->
+  UInt16
 
 /// Central PWM IRQ dispatcher keyed by hardware slice.
 ///
@@ -33,8 +34,8 @@ final class PWMInterruptRegistry {
 
   /// Indicates whether a pin currently has a registered PWM callback.
   func isRegistered(pin: PinID) -> Bool {
-    let slice = pwm_gpio_to_slice_num(pin)
-    let sliceID = SliceID(slice)
+    let slice = pwm_gpio_to_slice_num(pin.value)
+    let sliceID = SliceID(integerLiteral: slice)
     return handlers[sliceID]?[pin] != nil
   }
 
@@ -52,8 +53,8 @@ final class PWMInterruptRegistry {
     config: PWMConfig,
     computeLevel: @escaping PWMLevelComputation
   ) {
-    let slice = pwm_gpio_to_slice_num(pin)
-    let sliceID = SliceID(slice)
+    let slice = pwm_gpio_to_slice_num(pin.value)
+    let sliceID = SliceID(integerLiteral: slice)
     let previous = sliceConfigs[sliceID]
 
     if let previous, previous != config {
@@ -81,14 +82,14 @@ final class PWMInterruptRegistry {
   /// - Parameter pin: GPIO identifier.
   /// - Returns: `true` if an active registration existed and was removed.
   func unregister(pin: PinID) -> Bool {
-    let slice = pwm_gpio_to_slice_num(pin)
-    let sliceID = SliceID(slice)
+    let slice = pwm_gpio_to_slice_num(pin.value)
+    let sliceID = SliceID(integerLiteral: slice)
     guard var pinHandlers = handlers[sliceID], pinHandlers.removeValue(forKey: pin) != nil else {
       return false
     }
 
     handlers[sliceID] = pinHandlers.isEmpty ? nil : pinHandlers
-    pwm_set_gpio_level(pin, 0)
+    pwm_set_gpio_level(pin.value, 0)
 
     if pinHandlers.isEmpty {
       sliceConfigs[sliceID] = nil
@@ -121,7 +122,7 @@ final class PWMInterruptRegistry {
 
     while pending != 0 {
       let sliceIndex = UInt32(pending.trailingZeroBitCount)
-      let sliceID = SliceID(sliceIndex)
+      let sliceID = SliceID(integerLiteral: sliceIndex)
       let wrapCount = (wrapCounts[sliceID] ?? 0) &+ 1
 
       wrapCounts[sliceID] = wrapCount
@@ -143,7 +144,7 @@ extension SliceHandlers {
   /// Applies one wrap-tick update to all pins in this slice.
   func drive(config: PWMConfig, wrapCount: UInt32) {
     for (pin, computeLevel) in self {
-      pwm_set_gpio_level(pin, computeLevel(pin, config, wrapCount))
+      pwm_set_gpio_level(pin.value, computeLevel(pin, config, wrapCount))
     }
   }
 }

@@ -33,9 +33,9 @@ struct App {
   static func main() throws(AppError) {
     stdio_init_all()
 
-    let red = LEDController(pin: Pin(number: 15))
-    let green = LEDController(pin: Pin(number: 14))
-    let blue = LEDController(pin: Pin(number: 17))
+    let red = LEDController(output: .init(pin: 15))
+    let green = LEDController(output: .init(pin: 14))
+    let blue = LEDController(output: .init(pin: 17))
 
     red.off()
     green.off()
