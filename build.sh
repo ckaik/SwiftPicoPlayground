@@ -4,6 +4,7 @@ set -euo pipefail
 # Set the swift build configuration.
 export BUILD_TYPE="${BUILD_TYPE:-RelWithDebInfo}" # Options: Debug, Release, RelWithDebInfo, MinSizeRel
 export BUILD_VERBOSE="${BUILD_VERBOSE:-0}"        # Set to 1 to pass -v to swift build.
+export BUILD_FAST_INCREMENTAL="${BUILD_FAST_INCREMENTAL:-1}" # Set to 0 to always rerun prepare/finalize in full mode.
 
 ### Uncommenting the next line could help to debug issues or better understand the pipeline.
 # set -x
@@ -38,17 +39,39 @@ fi
     #--disable-toolset \
     #--disable-swift-version \
     #--disable-install-dependencies \
-"$SWIFTLY_PATH" run swift package --enable-experimental-prebuilts prepare-rp2xxx-environment \
-    "$@" \
-    --dump-prep-script "$PREPARATION_SCRIPT_PATH" \
-    --allow-writing-to-package-directory \
-    --disable-vscode-settings \
-    --disable-sourcekit-lsp-settings \
-    --allow-network-connections all  # Used to download PicoSDK, toolchain and other dependencies.
+if [ "$BUILD_FAST_INCREMENTAL" = "1" ] && [ -f "$PREPARATION_SCRIPT_PATH" ]; then
+  echo "Using cached preparation script at $PREPARATION_SCRIPT_PATH (set BUILD_FAST_INCREMENTAL=0 to force refresh)."
+else
+  "$SWIFTLY_PATH" run swift package prepare-rp2xxx-environment \
+      "$@" \
+      --dump-prep-script "$PREPARATION_SCRIPT_PATH" \
+      --allow-writing-to-package-directory \
+      --disable-vscode-settings \
+      --disable-sourcekit-lsp-settings \
+      --allow-network-connections all  # Used to download PicoSDK, toolchain and other dependencies.
+fi
 
 # The preparation script is dumped to PREPARATION_SCRIPT_PATH so it can be inspected.
 # Users can opt to place the output in a different location and source it here once inspected if preferred.
 source "$PREPARATION_SCRIPT_PATH"
+
+# CPicoSDK currently treats --incremental as "clean", which forces a full CMake rebuild.
+# Use the non-clean path by default for faster iterative builds.
+if [ "$BUILD_FAST_INCREMENTAL" = "1" ]; then
+  function finalize_rp2xxx_binary {
+    if [[ "${1:-}" == "--flash" || "${1:-}" == "--picotool" ]]; then
+      export AUTO_STDIO="usb"
+    elif [[ "${1:-}" == "--cortex-debug" ]]; then
+      export AUTO_STDIO="uart"
+    else
+      echo "[CPicoSDK] Warning: Launcher not specified. Defaulting to USB stdio." >&2
+      export AUTO_STDIO="usb"
+    fi
+
+    "$SWIFTLY_PATH" run swift package finalize-rp2xxx-binary "$SWIFTPM_PRODUCT" \
+      --allow-writing-to-package-directory
+  }
+fi
 
 # Avoid linking lwIP/cyw43_lwip; Mongoose provides its own TCP/IP driver.
 export CPICOSDK_pico2_w_IMPORTED_LIBS_MORE="pico_cyw43_arch_poll"
@@ -89,6 +112,7 @@ EOF
 
 # Builds the library using swiftpm. This is where the application code is compiled.
 SWIFT_BUILD_ARGS=(
+    --enable-experimental-prebuilts
     --build-system native
     --configuration "$SWIFT_BUILD_TYPE"
     --toolset "$TOOLSET_PATH"
@@ -104,7 +128,7 @@ fi
     $EXTRA_CONFIG_PARAMS            # This allows passing extra parameters from the command line.
                                     # Used for adding debugging flags based on the cmake configuration.
 
-# Merge Swift embedded runtime libraries (UnicodeDataTables, Concurrency) into libApp.a
+# Merge Swift embedded UnicodeDataTables into libApp.a
 # so the CMake final link step can resolve symbols they provide.
 TOOLCHAIN_PATH="$("$SWIFTLY_PATH" use -p)"
 SWIFT_EMBEDDED_LIBS_DIR="${TOOLCHAIN_PATH}/usr/lib/swift/embedded/${SWIFTPM_TRIPLE}"
