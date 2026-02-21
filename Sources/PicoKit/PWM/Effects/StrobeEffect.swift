@@ -1,6 +1,12 @@
 import Common
 
 extension PWMEffect {
+  /// Creates a repeating strobe pulse effect.
+  ///
+  /// - Parameters:
+  ///   - periodSeconds: Full strobe period duration.
+  ///   - dutyCycle: Fraction of each period spent on in `0 ... 1`.
+  ///   - brightness: On-state normalized brightness in `0 ... 1`.
   public static func strobe(
     periodSeconds: Float = 0.12,
     @Clamped dutyCycle: Float = 0.35,

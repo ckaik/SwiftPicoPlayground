@@ -44,5 +44,9 @@ public struct PWMConfig: Equatable {
 }
 
 extension PWMConfig {
+  /// Default PWM configuration used by convenience APIs.
+  ///
+  /// Uses `1000 Hz` wrap frequency with `12-bit`-like resolution
+  /// (`wrap = 4095`).
   public static let `default` = PWMConfig(frequencyHz: 1000, wrap: 4095)
 }

@@ -1,10 +1,21 @@
 import Common
 
 extension PWMEffect {
+  /// Creates a composite effect from a variadic list of phases.
+  ///
+  /// - Parameters:
+  ///   - phases: Ordered phase effects to play in sequence.
+  ///   - repeats: `true` to loop continuously, `false` for a one-shot cycle.
   public static func phase(_ phases: PWMEffect..., repeats: Bool = true) -> Self {
     .phase(phases, repeats: repeats)
   }
 
+  /// Creates a composite effect from ordered phases.
+  ///
+  /// - Parameters:
+  ///   - phases: Ordered phase effects to play in sequence.
+  ///   - repeats: `true` to loop continuously, `false` to hold the final cycle.
+  /// - Precondition: `phases` must not be empty.
   public static func phase(_ phases: [PWMEffect], repeats: Bool = true) -> Self {
     var cumulativeDuration: Float = 0
     var offsets: [Float] = []

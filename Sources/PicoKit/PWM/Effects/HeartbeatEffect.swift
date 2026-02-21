@@ -1,6 +1,15 @@
 import Common
 
 extension PWMEffect {
+  /// Creates a repeating double-pulse heartbeat pattern.
+  ///
+  /// - Parameters:
+  ///   - pulseSeconds: Total duration for each rise/fall pulse.
+  ///   - gapSeconds: Short gap between the first and second pulse.
+  ///   - pauseSeconds: Pause after the second pulse.
+  ///   - minLevel: Baseline normalized brightness in `0 ... 1`.
+  ///   - primaryLevel: Peak level for the first pulse in `0 ... 1`.
+  ///   - secondaryLevel: Peak level for the second pulse in `0 ... 1`.
   public static func heartbeat(
     @PWMDuration pulseSeconds: Float = 0.18,
     @PWMDuration gapSeconds: Float = 0.08,

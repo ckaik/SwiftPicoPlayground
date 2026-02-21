@@ -1,6 +1,12 @@
 import Common
 
 extension PWMEffect {
+  /// Creates a fast random-like flicker around a baseline brightness.
+  ///
+  /// - Parameters:
+  ///   - baseLevel: Baseline normalized brightness in `0 ... 1`.
+  ///   - intensity: Maximum signed deviation from the base level.
+  ///   - intervalSeconds: Noise sampling interval in seconds.
   public static func flicker(
     @Clamped baseLevel: Float = 0.5,
     intensity: Float = 0.4,

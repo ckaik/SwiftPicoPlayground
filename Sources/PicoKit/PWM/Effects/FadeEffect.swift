@@ -1,6 +1,13 @@
 import Common
 
 extension PWMEffect {
+  /// Creates a linear brightness fade between two normalized levels.
+  ///
+  /// - Parameters:
+  ///   - durationSeconds: Fade duration in seconds.
+  ///   - startLevel: Start level in `0 ... 1`.
+  ///   - endLevel: End level in `0 ... 1`.
+  /// - Returns: Effect that interpolates between `startLevel` and `endLevel`.
   public static func fade(
     for durationSeconds: Float = 1,
     @Clamped startLevel: Float = 0,

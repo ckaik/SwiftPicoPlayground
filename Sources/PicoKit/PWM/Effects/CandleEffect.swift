@@ -1,6 +1,12 @@
 import Common
 
 extension PWMEffect {
+  /// Creates a warm candle-like flicker effect using deterministic noise.
+  ///
+  /// - Parameters:
+  ///   - baseLevel: Baseline normalized brightness in `0 ... 1`.
+  ///   - intensity: Maximum signed deviation from the base level.
+  ///   - intervalSeconds: Noise sampling interval in seconds.
   public static func candle(
     @Clamped baseLevel: Float = 0.4,
     intensity: Float = 0.2,
