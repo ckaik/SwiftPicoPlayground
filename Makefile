@@ -12,4 +12,7 @@ lint:
 submodule:
 	git submodule update --init --recursive
 
-.PHONY: format lint hooks default submodule
+release:
+	BUILD_TYPE=Release ./build.sh
+
+.PHONY: format lint hooks default submodule release

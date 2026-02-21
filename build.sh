@@ -12,6 +12,29 @@ export BUILD_FAST_INCREMENTAL="${BUILD_FAST_INCREMENTAL:-1}" # Set to 0 to alway
 export BUILD_SCRIPT_VERSION=1 # Helps the preparation script to warn in case of future changes.
 export PREPARATION_SCRIPT_PATH="$(dirname "$0")/.env_prep"
 
+# VS Code "SwiftPM: App - Debug (Cortex-Debug) [CPicoSDK]" invokes:
+#   build.sh --cortex-debug
+# Mirror that behavior when no launcher flag is provided explicitly.
+BUILD_ARGS=("$@")
+LAUNCHER_ARG=""
+for arg in "$@"; do
+  case "$arg" in
+    --cortex-debug|--flash|--picotool)
+      LAUNCHER_ARG="$arg"
+      break
+      ;;
+  esac
+done
+
+if [ -z "$LAUNCHER_ARG" ]; then
+  LAUNCHER_ARG="--cortex-debug"
+  if [ ${#BUILD_ARGS[@]} -gt 0 ]; then
+    BUILD_ARGS=("$LAUNCHER_ARG" "${BUILD_ARGS[@]}")
+  else
+    BUILD_ARGS=("$LAUNCHER_ARG")
+  fi
+fi
+
 # Ensure git submodules are initialised before building.
 if git submodule status --recursive 2>/dev/null | grep -q '^-'; then
   echo "Submodules not initialised – running 'git submodule update --init --recursive'..."
@@ -43,7 +66,7 @@ if [ "$BUILD_FAST_INCREMENTAL" = "1" ] && [ -f "$PREPARATION_SCRIPT_PATH" ]; the
   echo "Using cached preparation script at $PREPARATION_SCRIPT_PATH (set BUILD_FAST_INCREMENTAL=0 to force refresh)."
 else
   "$SWIFTLY_PATH" run swift package prepare-rp2xxx-environment \
-      "$@" \
+      "${BUILD_ARGS[@]}" \
       --dump-prep-script "$PREPARATION_SCRIPT_PATH" \
       --allow-writing-to-package-directory \
       --disable-vscode-settings \
@@ -111,6 +134,12 @@ EOF
 "$SWIFTLY_PATH" install
 
 # Builds the library using swiftpm. This is where the application code is compiled.
+LIBAPP_PATH=".build/${SWIFTPM_TRIPLE}/${SWIFT_BUILD_TYPE}/lib${SWIFTPM_PRODUCT}.a"
+
+# SwiftPM's archive update can retain stale object members when source files are
+# removed/renamed between builds. Start from a fresh archive each run.
+rm -f "$LIBAPP_PATH"
+
 SWIFT_BUILD_ARGS=(
     --enable-experimental-prebuilts
     --build-system native
@@ -133,7 +162,6 @@ fi
 TOOLCHAIN_PATH="$("$SWIFTLY_PATH" use -p)"
 SWIFT_EMBEDDED_LIBS_DIR="${TOOLCHAIN_PATH}/usr/lib/swift/embedded/${SWIFTPM_TRIPLE}"
 
-LIBAPP_PATH=".build/${SWIFTPM_TRIPLE}/${SWIFT_BUILD_TYPE}/lib${SWIFTPM_PRODUCT}.a"
 LLVM_AR="${TOOLCHAIN_PATH}/usr/bin/llvm-ar"
 
 if [ -d "$SWIFT_EMBEDDED_LIBS_DIR" ] && [ -f "$LIBAPP_PATH" ] && [ -x "$LLVM_AR" ]; then
@@ -151,7 +179,7 @@ fi
 
 # Here the application code is linked with the PicoSDK and other imported libraries to produce
 # the final binary that can be flashed to the target device. An UF2 and ELF file are produced.
-finalize_rp2xxx_binary "$@"
+finalize_rp2xxx_binary "${BUILD_ARGS[@]}"
 
 # Flash the produced binary to the target device if requested.
-flash_if_needed "$@"
+flash_if_needed "${BUILD_ARGS[@]}"

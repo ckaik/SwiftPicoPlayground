@@ -56,14 +56,15 @@ public final class MGManager {
     }
   }
 
-  public func loop(pollIntervalMS: Int32 = 10) {
+  public func loop(pollIntervalMS: Int32 = 100) {
     guard !isLooping else { return }
     isLooping = true
     defer { isLooping = false }
 
-    let manager = managerPointer
-    while true {
-      mg_mgr_poll(manager, pollIntervalMS)
+    withManagerPointer { manager in
+      while true {
+        mg_mgr_poll(manager, pollIntervalMS)
+      }
     }
   }
 }
@@ -106,10 +107,6 @@ extension MGManager {
 }
 
 extension MGManager {
-  private var managerPointer: UnsafeMutablePointer<mg_mgr> {
-    withUnsafeMutablePointer(to: &manager) { $0 }
-  }
-
   func withManagerPointer<T>(_ body: (UnsafeMutablePointer<mg_mgr>) -> T) -> T {
     withUnsafeMutablePointer(to: &manager, body)
   }

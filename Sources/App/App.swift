@@ -4,26 +4,6 @@ import HomeAssistantKit
 import MongooseKit
 import PicoKit
 
-let ledConfig = [
-  "schema": JSONEncodedValue.string("json"),
-  "brightness": JSONEncodedValue.bool(true),
-  "brightness_scale": JSONEncodedValue.number("255"),
-  "enabled_by_default": JSONEncodedValue.bool(true),
-  "effect": JSONEncodedValue.bool(true),
-  "effect_list": JSONEncodedValue.array([
-    .string("Breathe"),
-    .string("Strobe"),
-    .string("Heartbeat"),
-    .string("Ping Pong Fade"),
-    .string("Candle"),
-    .string("Pulse Hold"),
-    .string("Police Flash"),
-    .string("Flicker"),
-  ]),
-  "flash": JSONEncodedValue.bool(false),
-  "transition": JSONEncodedValue.bool(false),
-]
-
 @main
 struct App {
   enum AppError: Error {
@@ -33,7 +13,7 @@ struct App {
   static func main() throws(AppError) {
     stdio_init_all()
 
-    let red = LEDController(output: .init(pin: 15))
+    let red: LEDController = LEDController(output: .init(pin: 15))
     let green = LEDController(output: .init(pin: 14))
     let blue = LEDController(output: .init(pin: 17))
 
@@ -41,7 +21,7 @@ struct App {
     green.off()
     blue.off()
 
-    print("connect to wifi")
+    print("connect to wifi...")
 
     do {
       try MGManager.shared.connectToWiFi(
@@ -55,65 +35,23 @@ struct App {
       return
     }
 
-    print("waiting for network")
+    print("waiting for network...")
 
     MGManager.shared.waitForReady()
 
-    let router = HomeAssistantRouter(
-      mqttConfig: MQTTConfig(
-        host: "10.0.0.101",
-        username: Secrets.mqttUser,
-        password: Secrets.mqttPassword
-      ),
-      deviceId: "pico2w",
-      deviceName: "Pico",
-      objectId: "Pico",
-      lights: [
-        .init(
-          key: "red",
-          componentID: "led.red",
-          name: "Rote LED",
-          discoveryData: ledConfig,
-          initialState: red.currentLightState(),
-          onCommand: red.process
-        ),
-        .init(
-          key: "green",
-          componentID: "led.green",
-          name: "Grüne LED",
-          discoveryData: ledConfig,
-          initialState: green.currentLightState(),
-          onCommand: green.process
-        ),
-        .init(
-          key: "blue",
-          componentID: "led.blue",
-          name: "Blaue LED",
-          discoveryData: ledConfig,
-          initialState: blue.currentLightState(),
-          onCommand: blue.process
-        ),
-      ],
-      device: .init(
-        manufacturer: "CKAIK",
-        serialNumber: "1337",
-        hardwareVersion: "0.1.0",
-        softwareVersion: "0.1.0",
-        configurationUrl: "https://github.com/ckaik/SwiftPicoPlayground"
-      )
+    let hass = startHomeAssistant(red: red, green: green, blue: blue)
+    let http = startHTTPServer(
+      ledMap: [
+        "15": red,
+        "14": green,
+        "17": blue,
+      ]
     )
 
-    print("starting Home Assistant client")
+    _ = http
+    _ = hass
 
-    do {
-      try router.start()
-    } catch {
-      print("failed")
-      sleep_ms(5000)
-      return
-    }
-
-    print("polling...")
+    print("up and running...")
 
     MGManager.shared.loop()
   }
