@@ -28,3 +28,9 @@ public struct LightState: Command, State {
     case brightness = "brightness"
   }
 }
+
+extension LightState: CustomStringConvertible {
+  public var description: String {
+    "LightState(mode: \(mode?.rawValue ?? "nil"), state: \(state.map { $0 ? "ON" : "OFF" } ?? "nil"), brightness: \(brightness.map(String.init) ?? "nil"), effect: \(effect ?? "nil"), transition: \(transition.map(String.init) ?? "nil"))"
+  }
+}

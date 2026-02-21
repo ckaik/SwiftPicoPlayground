@@ -48,6 +48,8 @@ final class LEDController {
   }
 
   func process(state: LightState) -> LightState {
+    print("State Request: \(state)")
+
     guard
       let isOn = state.state,
       isOn
