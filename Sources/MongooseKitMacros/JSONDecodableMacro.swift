@@ -26,8 +26,7 @@ public struct JSONDecodableMacro: MemberMacro, ExtensionMacro {
       return [
         try makeStoredPropertyInitializer(
           members: structDecl.memberBlock.members,
-          accessPrefix: accessPrefix(from: structDecl.modifiers),
-          declarationKind: "struct"
+          accessPrefix: accessPrefix(from: structDecl.modifiers)
         )
       ]
     }
@@ -36,8 +35,7 @@ public struct JSONDecodableMacro: MemberMacro, ExtensionMacro {
       return [
         try makeStoredPropertyInitializer(
           members: classDecl.memberBlock.members,
-          accessPrefix: classAccessPrefix(from: classDecl.modifiers),
-          declarationKind: "class"
+          accessPrefix: classAccessPrefix(from: classDecl.modifiers)
         )
       ]
     }
@@ -46,8 +44,7 @@ public struct JSONDecodableMacro: MemberMacro, ExtensionMacro {
       return [
         try makeStoredPropertyInitializer(
           members: actorDecl.memberBlock.members,
-          accessPrefix: accessPrefix(from: actorDecl.modifiers),
-          declarationKind: "actor"
+          accessPrefix: accessPrefix(from: actorDecl.modifiers)
         )
       ]
     }
@@ -83,48 +80,26 @@ public struct JSONDecodableMacro: MemberMacro, ExtensionMacro {
 
   private static func makeStoredPropertyInitializer(
     members: MemberBlockItemListSyntax,
-    accessPrefix: String,
-    declarationKind: String
+    accessPrefix: String
   ) throws -> DeclSyntax {
     var assignments: [String] = []
 
-    for member in members {
-      guard let variable = member.decl.as(VariableDeclSyntax.self) else {
-        continue
-      }
+    let properties = try JSONMacroSupport.collectStoredProperties(
+      from: members,
+      synthesisMacroName: "@JSONDecodable"
+    )
 
-      if isStatic(variable) {
-        continue
-      }
+    for property in properties {
+      let decode = decodeExpression(
+        typeName: property.typeName,
+        path: property.key,
+        isOptional: property.isOptional
+      )
 
-      for binding in variable.bindings {
-        guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text
-        else {
-          throw MacroExpansionErrorMessage(
-            "@JSONDecodable only supports stored properties with identifier patterns"
-          )
-        }
-
-        guard let typeAnnotation = binding.typeAnnotation else {
-          throw MacroExpansionErrorMessage(
-            "@JSONDecodable requires explicit type annotations for property '\(identifier)'"
-          )
-        }
-
-        if binding.accessorBlock != nil {
-          continue
-        }
-
-        let type = typeAnnotation.type
-        let (typeName, isOptional) = unwrapOptional(type: type)
-        let keyPath = identifier
-        let decode = decodeExpression(typeName: typeName, path: keyPath, isOptional: isOptional)
-
-        if let defaultValue = binding.initializer?.value.trimmedDescription {
-          assignments.append("self.\(identifier) = (\(decode)) ?? \(defaultValue)")
-        } else {
-          assignments.append("self.\(identifier) = \(decode)")
-        }
+      if let defaultValue = property.defaultValue {
+        assignments.append("self.\(property.identifier) = (\(decode)) ?? \(defaultValue)")
+      } else {
+        assignments.append("self.\(property.identifier) = \(decode)")
       }
     }
 
@@ -157,18 +132,6 @@ public struct JSONDecodableMacro: MemberMacro, ExtensionMacro {
     }
   }
 
-  private static func unwrapOptional(type: TypeSyntax) -> (typeName: String, isOptional: Bool) {
-    if let optional = type.as(OptionalTypeSyntax.self) {
-      return (optional.wrappedType.trimmedDescription, true)
-    }
-
-    if let implicitlyUnwrapped = type.as(ImplicitlyUnwrappedOptionalTypeSyntax.self) {
-      return (implicitlyUnwrapped.wrappedType.trimmedDescription, true)
-    }
-
-    return (type.trimmedDescription, false)
-  }
-
   private static func accessPrefix(from modifiers: DeclModifierListSyntax?) -> String {
     guard let modifiers else {
       return ""
@@ -194,11 +157,5 @@ public struct JSONDecodableMacro: MemberMacro, ExtensionMacro {
     }
 
     return "\(baseAccess)required "
-  }
-
-  private static func isStatic(_ variable: VariableDeclSyntax) -> Bool {
-    variable.modifiers.contains(where: {
-      $0.name.text == "static" || $0.name.text == "class"
-    })
   }
 }

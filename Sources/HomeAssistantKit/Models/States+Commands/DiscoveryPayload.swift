@@ -1,40 +1,17 @@
 import Common
+import MongooseKit
 
-public enum JSONValue {
-  case string(String)
-  case floatingPoint(Double)
-  case number(Int)
-  case bool(Bool)
-  case object([String: JSONValue])
-  case array([JSONValue])
-  case null
-
-  public var json: String {
-    switch self {
-    case .string(let str):
-      return "\"\(str)\""
-    case .floatingPoint(let num):
-      return "\(num)"
-    case .number(let num):
-      return "\(num)"
-    case .bool(let bool):
-      return bool ? "true" : "false"
-    case .object(let obj):
-      let objJson = obj.map { "\"\($0)\": \($1.json)" }.joined(separator: ",")
-      return "{ \(objJson) }"
-    case .array(let arr):
-      let arrJson = arr.map { $0.json }.joined(separator: ",")
-      return "[ \(arrJson) ]"
-    case .null:
-      return "null"
-    }
-  }
-}
-
+@JSONEncodable
 public struct DiscoveryPayload: State {
   public var qos: Int
+
+  @JSON("dev")
   public var device: Device
+
+  @JSON("o")
   public var origin: Origin
+
+  @JSON("cmps")
   public var components: [String: Component]
 
   public init(
@@ -47,28 +24,26 @@ public struct DiscoveryPayload: State {
     self.origin = Origin()
     self.components = components
   }
-
-  public var json: String {
-    let componentsJson = components.map { "\"\($0.key)\": \($0.value.json)" }.joined(
-      separator: ",")
-    return """
-      {
-        "qos": \(qos),
-        "dev": \(device.json),
-        "o": \(origin.json),
-        "cmps": { \(componentsJson) }
-      }
-      """
-  }
 }
 
+@JSONEncodable
 public struct Device: State {
   public var ids: String
   public var name: String
+
+  @JSON("mf")
   public var manufacturer: String?
+
+  @JSON("sn")
   public var serialNumber: String?
+
+  @JSON("hw")
   public var hardwareVersion: String?
+
+  @JSON("sw")
   public var softwareVersion: String?
+
+  @JSON("cu")
   public var configurationUrl: String?
 
   public init(
@@ -88,41 +63,23 @@ public struct Device: State {
     self.softwareVersion = softwareVersion
     self.configurationUrl = configurationUrl
   }
-
-  public var json: String {
-    """
-    {
-      "ids": ["\(ids)"],
-      "name": "\(name)",
-      "mf": \(manufacturer.map { "\"\($0)\"" } ?? "null"),
-      "sn": \(serialNumber.map { "\"\($0)\"" } ?? "null"),
-      "hw": \(hardwareVersion.map { "\"\($0)\"" } ?? "null"),
-      "sw": \(softwareVersion.map { "\"\($0)\"" } ?? "null"),
-      "cu": \(configurationUrl.map { "\"\($0)\"" } ?? "null")
-    }
-    """
-  }
 }
 
+@JSONEncodable
 public struct Origin: State {
-  public let name = "HomeAssistantKit"
-  public let softwareVersion = "1.0.0"
-  public let supportUrl = "https://github.com/ckaik/SwiftPicoPlayground"
+  public let name: String = "HomeAssistantKit"
+
+  @JSON("sw")
+  public let softwareVersion: String = "1.0.0"
+
+  @JSON("url")
+  public let supportUrl: String = "https://github.com/ckaik/SwiftPicoPlayground"
 
   public init() {}
-
-  public var json: String {
-    """
-    {
-      "name": "\(name)",
-      "sw": "\(softwareVersion)",
-      "url": "\(supportUrl)"
-    }
-    """
-  }
 }
 
 public struct Component: State {
+  @JSONEncodable
   public enum Kind: String {
     case light
   }
@@ -132,7 +89,7 @@ public struct Component: State {
   public var name: String
   public var stateTopic: String
   public var commandTopic: String
-  public var data: [String: JSONValue]?
+  public var data: [String: JSONEncodedValue]?
 
   public init(
     id: String,
@@ -140,7 +97,7 @@ public struct Component: State {
     name: String,
     stateTopic: String,
     commandTopic: String,
-    data: [String: JSONValue]? = nil
+    data: [String: JSONEncodedValue]? = nil
   ) {
     self.id = id
     self.kind = kind
@@ -150,18 +107,21 @@ public struct Component: State {
     self.data = data
   }
 
-  public var json: String {
-    let dataJson = data?.map { "\"\($0)\": \($1.json)" }.joined(separator: ",") ?? ""
+  public func encode(encoder: JSONEncoder) throws(JSONEncodingError) -> JSONEncodedValue {
+    var object: [String: JSONEncodedValue] = [
+      "unique_id": try encoder.box(id),
+      "p": try encoder.box(kind.rawValue),
+      "name": try encoder.box(name),
+      "stat_t": try encoder.box(stateTopic),
+      "cmd_t": try encoder.box(commandTopic),
+    ]
 
-    return """
-      {
-        \(dataJson.isEmpty ? "" : "\(dataJson),")
-        "unique_id": "\(id)",
-        "p": "\(kind.rawValue)",
-        "name": "\(name)",
-        "stat_t": "\(stateTopic)",
-        "cmd_t": "\(commandTopic)"
+    if let data {
+      for (key, value) in data {
+        object[key] = value
       }
-      """
+    }
+
+    return .object(object)
   }
 }

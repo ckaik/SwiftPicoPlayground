@@ -29,7 +29,7 @@ public final class HomeAssistantRouter {
     public var name: String
     public var stateTopic: String?
     public var commandTopic: String?
-    public var discoveryData: [String: JSONValue]?
+    public var discoveryData: [String: JSONEncodedValue]?
     public var initialState: LightState?
     public var onCommand: (LightState) -> LightState?
 
@@ -39,7 +39,7 @@ public final class HomeAssistantRouter {
       name: String,
       stateTopic: String? = nil,
       commandTopic: String? = nil,
-      discoveryData: [String: JSONValue]? = nil,
+      discoveryData: [String: JSONEncodedValue]? = nil,
       initialState: LightState? = nil,
       onCommand: @escaping (LightState) -> LightState?
     ) {
@@ -168,7 +168,8 @@ public final class HomeAssistantRouter {
       discovery: discovery,
       discoveryPayload: discoveryPayload,
       state: { componentID, _ in
-        self.statesByComponentID[componentID]?.json
+        let encoder = JSONEncoder.homeAssistant
+        return self.statesByComponentID[componentID].flatMap { try? encoder.encodeString($0) }
       },
       handler: handle(event:)
     )
@@ -211,10 +212,15 @@ public final class HomeAssistantRouter {
       }
 
       statesByComponentID[light.componentID] = newState
+
+      let encoder = JSONEncoder(boolEncodingStrategy: .string(trueValue: "ON", falseValue: "OFF"))
+      let newStateJSON = (try? encoder.encodeString(newState)) ?? "null"
+
       debug(
-        "publishing new state for component \(light.componentID) to \(light.stateTopic): \(preview(newState.json))"
+        "publishing new state for component \(light.componentID) to \(light.stateTopic): \(preview(newStateJSON))"
       )
-      return .publish(topic: light.stateTopic, content: newState.json)
+
+      return .publish(topic: light.stateTopic, content: newStateJSON)
     }
   }
 }

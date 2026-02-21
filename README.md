@@ -15,7 +15,8 @@ I'm running this on a Mac in VS Code. I'm using a Raspberry Pi Pico 2W and the o
 
 - **HTTP Server** (`Sources/MongooseKit/HTTP/`): A lightweight wrapper around Mongoose HTTP primitives for handling simple request/response flows on-device.
 - **MQTT Client** (`Sources/MongooseKit/MQTT/`): A client-focused API for connecting to an MQTT broker, subscribing to topics, and handling reconnect behavior for basic IoT messaging scenarios.
-- **JSON Decoder** (`Sources/MongooseKit/Utilities/MGJSONDecoder.swift`): A small utility layer that helps decode Mongoose JSON values into Swift-friendly types used by the networking components.
+- **JSON Encoder** (`Sources/MongooseKit/Utilities/JSONEncoder.swift`): A pure Swift utility for encoding JSON payloads with configurable `nil` and bool strategies for embedded-friendly output.
+- **JSON Macros** (`Sources/MongooseKit/Utilities/JSON*Macro.swift`): `@JSONDecodable`, `@JSONEncodable`, and `@JSONCodable` synthesize JSON decode/encode boilerplate for model types, and `@JSON("...")` overrides per-property keys for both decoding and encoding.
 
 ## Getting Started
 

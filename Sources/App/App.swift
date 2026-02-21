@@ -5,12 +5,12 @@ import MongooseKit
 import PicoKit
 
 let ledConfig = [
-  "schema": JSONValue.string("json"),
-  "brightness": JSONValue.bool(true),
-  "brightness_scale": JSONValue.number(255),
-  "enabled_by_default": JSONValue.bool(true),
-  "effect": JSONValue.bool(true),
-  "effect_list": JSONValue.array([
+  "schema": JSONEncodedValue.string("json"),
+  "brightness": JSONEncodedValue.bool(true),
+  "brightness_scale": JSONEncodedValue.number("255"),
+  "enabled_by_default": JSONEncodedValue.bool(true),
+  "effect": JSONEncodedValue.bool(true),
+  "effect_list": JSONEncodedValue.array([
     .string("Breathe"),
     .string("Strobe"),
     .string("Heartbeat"),
@@ -20,8 +20,8 @@ let ledConfig = [
     .string("Police Flash"),
     .string("Flicker"),
   ]),
-  "flash": JSONValue.bool(false),
-  "transition": JSONValue.bool(false),
+  "flash": JSONEncodedValue.bool(false),
+  "transition": JSONEncodedValue.bool(false),
 ]
 
 @main

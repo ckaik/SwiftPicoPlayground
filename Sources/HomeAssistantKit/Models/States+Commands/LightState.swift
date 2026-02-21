@@ -1,5 +1,6 @@
 import MongooseKit
 
+@JSONCodable
 public struct LightState: Command, State {
   public var mode: Mode?
   public var state: Bool?
@@ -21,28 +22,9 @@ public struct LightState: Command, State {
     self.transition = transition
   }
 
+  @JSONCodable
   public enum Mode: String {
     case onOff = "onoff"
     case brightness = "brightness"
-  }
-
-  public init(reader: MGJSONParser) throws(MGJSONDecodingError) {
-    self.mode = (try? reader.string("$.mode")).flatMap { Mode(rawValue: $0) }
-    self.state = try? reader.bool("$.state")
-    self.brightness = try? reader.number("$.brightness")
-    self.effect = try? reader.string("$.effect")
-    self.transition = try? reader.number("$.transition")
-  }
-
-  public var json: String {
-    """
-    {
-      "mode": \(mode.map { "\"\($0.rawValue)\"" } ?? "null"),
-      "state": \(state.map { $0 ? "\"ON\"" : "\"OFF\"" } ?? "null"),
-      "brightness": \(brightness.map { "\($0)" } ?? "null"),
-      "effect": \(effect.map { "\"\($0)\"" } ?? "null"),
-      "transition": \(transition.map { "\($0)" } ?? "null")
-    }
-    """
   }
 }

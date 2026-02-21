@@ -1,6 +1,6 @@
 @attached(extension, conformances: JSONDecodable)
 @attached(member, names: named(init))
-public macro Decodable() =
+public macro JSONDecodable() =
   #externalMacro(
     module: "MongooseKitMacros",
     type: "JSONDecodableMacro"

@@ -1,15 +1,13 @@
 import Common
 import MongooseKit
 
-public protocol Command: MGJSONDecodable {}
+public protocol Command: JSONDecodable {}
 
 extension Command {
-  public static func from(json: String) throws(MGJSONDecodingError) -> Self {
-    let parser = MGJSONParser(payload: Array(json.utf8))
-    return try Self(reader: parser)
+  public static func from(json: String) throws(JSONDecodingError) -> Self {
+    let decoder = JSONDecoder(boolDecodingStrategy: .default)
+    return try Self(decoder: decoder)
   }
 }
 
-public protocol State {
-  var json: String { get }
-}
+public protocol State: JSONEncodable {}

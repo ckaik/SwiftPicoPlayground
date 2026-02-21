@@ -1,6 +1,10 @@
 import Common
 import MongooseKit
 
+extension JSONEncoder {
+  static let homeAssistant = Self(boolEncodingStrategy: .string(trueValue: "ON", falseValue: "OFF"))
+}
+
 public struct DiscoveryConfig {
   public var prefix: String
   public var nodeId: String?
@@ -50,7 +54,9 @@ public final class HomeAssistantClient {
   private var isRunning = false
 
   lazy private var discoveryTopic = { discovery.topic }()
-  lazy private var discoveryPayloadString = { discoveryPayload.json }()
+  lazy private var discoveryPayloadString = {
+    (try? JSONEncoder.homeAssistant.encodeString(discoveryPayload)) ?? "null"
+  }()
 
   public init(
     mqttConfig: MQTTConfig,

@@ -39,7 +39,7 @@ let package = Package(
     .target(name: "CMongoose"),
     .target(name: "Common", dependencies: ["CPicoSDK", "CMath"]),
     .target(
-      name: "HomeAssistantKit", dependencies: ["Common", "MongooseKit", "MongooseKitMacros"]),
+      name: "HomeAssistantKit", dependencies: ["Common", "MongooseKit"]),
     .target(name: "MongooseKit", dependencies: ["CMongoose", "Common", "MongooseKitMacros"]),
     .target(name: "PicoKit", dependencies: ["CPicoSDK", "Common"]),
     .macro(
