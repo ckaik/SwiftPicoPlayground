@@ -1,5 +1,5 @@
 {
-  "originHash" : "e0e854e325ae445ad67eda72522ac677f04e14fd0dae9516477582b37238f3fd",
+  "originHash" : "e380c1646c7c49ae117d55c2b0f52fc5c4056370b68064cd3c0713a399c4a38b",
   "pins" : [
     {
       "identity" : "cpicosdk",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
         "version" : "1.7.0"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax.git",
+      "state" : {
+        "revision" : "4799286537280063c85a32f09884cfbca301b1a1",
+        "version" : "602.0.0"
       }
     }
   ],

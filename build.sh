@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # Set the swift build configuration.
-export BUILD_TYPE="RelWithDebInfo" # Options: Debug, Release, RelWithDebInfo, MinSizeRel
+export BUILD_TYPE="${BUILD_TYPE:-RelWithDebInfo}" # Options: Debug, Release, RelWithDebInfo, MinSizeRel
+export BUILD_VERBOSE="${BUILD_VERBOSE:-0}"        # Set to 1 to pass -v to swift build.
 
 ### Uncommenting the next line could help to debug issues or better understand the pipeline.
 # set -x
@@ -37,7 +38,7 @@ fi
     #--disable-toolset \
     #--disable-swift-version \
     #--disable-install-dependencies \
-"$SWIFTLY_PATH" run swift package prepare-rp2xxx-environment \
+"$SWIFTLY_PATH" run swift package --enable-experimental-prebuilts prepare-rp2xxx-environment \
     "$@" \
     --dump-prep-script "$PREPARATION_SCRIPT_PATH" \
     --allow-writing-to-package-directory \
@@ -87,11 +88,19 @@ EOF
 "$SWIFTLY_PATH" install
 
 # Builds the library using swiftpm. This is where the application code is compiled.
-"$SWIFTLY_PATH" run swift build -v \
-    --build-system native \
-    --configuration $SWIFT_BUILD_TYPE \
-    --toolset $TOOLSET_PATH \
-    --triple $SWIFTPM_TRIPLE \
+SWIFT_BUILD_ARGS=(
+    --build-system native
+    --configuration "$SWIFT_BUILD_TYPE"
+    --toolset "$TOOLSET_PATH"
+    --triple "$SWIFTPM_TRIPLE"
+)
+
+if [ "$BUILD_VERBOSE" = "1" ]; then
+  SWIFT_BUILD_ARGS=( -v "${SWIFT_BUILD_ARGS[@]}" )
+fi
+
+"$SWIFTLY_PATH" run swift build \
+    "${SWIFT_BUILD_ARGS[@]}" \
     $EXTRA_CONFIG_PARAMS            # This allows passing extra parameters from the command line.
                                     # Used for adding debugging flags based on the cmake configuration.
 
