@@ -50,25 +50,3 @@ extension HTTPResponse {
     return headersString
   }
 }
-
-private func asciiCaseInsensitiveEquals(_ lhs: String, _ rhs: String) -> Bool {
-  let lhsBytes = lhs.utf8
-  let rhsBytes = rhs.utf8
-
-  guard lhsBytes.count == rhsBytes.count else { return false }
-
-  for (lhsByte, rhsByte) in zip(lhsBytes, rhsBytes)
-  where asciiLowercased(lhsByte) != asciiLowercased(rhsByte) {
-    return false
-  }
-
-  return true
-}
-
-private func asciiLowercased(_ byte: UInt8) -> UInt8 {
-  if byte >= 65 && byte <= 90 {
-    return byte + 32
-  }
-
-  return byte
-}

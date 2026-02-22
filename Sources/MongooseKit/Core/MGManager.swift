@@ -70,43 +70,6 @@ public final class MGManager {
 }
 
 extension MGManager {
-  public struct WiFiSecurity: OptionSet {
-    public let rawValue: UInt8
-
-    public static let `open` = WiFiSecurity([])
-    public static let wep = WiFiSecurity(rawValue: 1 << 0)
-    public static let wpa = WiFiSecurity(rawValue: 1 << 1)
-    public static let wpa2 = WiFiSecurity(rawValue: 1 << 2)
-    public static let wpa3 = WiFiSecurity(rawValue: 1 << 3)
-
-    public init(rawValue: UInt8) {
-      self.rawValue = rawValue
-    }
-  }
-
-  public func connectToWiFi(ssid: String, password: String, security: WiFiSecurity) throws(MGError)
-  {
-    var wifi = mg_wifi_data()
-    let ssidCString = try ManagedCString(ssid)
-    let passwordCString = try ManagedCString(password)
-
-    wifi.ssid = ssidCString.pointer
-    wifi.pass = passwordCString.pointer
-    wifi.security = security.rawValue
-    wifi.apmode = false
-
-    let didConnect = mg_wifi_connect(&wifi)
-
-    ssidCString.cleanup()
-    passwordCString.cleanup()
-
-    if !didConnect {
-      throw MGError.wifiConnectFailed
-    }
-  }
-}
-
-extension MGManager {
   func withManagerPointer<T>(_ body: (UnsafeMutablePointer<mg_mgr>) -> T) -> T {
     withUnsafeMutablePointer(to: &manager, body)
   }
@@ -114,23 +77,5 @@ extension MGManager {
   private func isInterfaceReady(_ manager: UnsafeMutablePointer<mg_mgr>) -> Bool {
     guard let interface = manager.pointee.ifp else { return false }
     return interface.pointee.state == UInt8(MG_TCPIP_STATE_READY)
-  }
-}
-
-private struct ManagedCString {
-  let pointer: UnsafeMutablePointer<CChar>?
-
-  init(_ value: String) throws(MGError) {
-    guard let copy = value.withCString({ strdup($0) }) else {
-      throw MGError.wifiConnectFailed
-    }
-
-    self.pointer = copy
-  }
-
-  func cleanup() {
-    if let pointer {
-      mg_free(pointer)
-    }
   }
 }

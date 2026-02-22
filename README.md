@@ -15,8 +15,8 @@ I'm running this on a Mac in VS Code. I'm using a Raspberry Pi Pico 2W and the o
 
 - **HTTP Server** (`Sources/MongooseKit/HTTP/`): A lightweight wrapper around Mongoose HTTP primitives for handling simple request/response flows on-device.
 - **MQTT Client** (`Sources/MongooseKit/MQTT/`): A client-focused API for connecting to an MQTT broker, subscribing to topics, and handling reconnect behavior for basic IoT messaging scenarios.
-- **JSON Encoder** (`Sources/MongooseKit/Utilities/JSONEncoder.swift`): A utility for encoding JSON payloads with configurable `nil`, bool, and object key ordering strategies for embedded-friendly output. It defaults to insertion-order object keys (with sorted opt-in), uses C-backed floating-point formatting for embedded stability, and retains full Unicode behavior (requires linking `libswiftUnicodeDataTables.a` when Unicode-dependent string operations are used in Embedded Swift builds).
-- **JSON Macros** (`Sources/MongooseKit/Utilities/JSON*Macro.swift`): `@JSONDecodable`, `@JSONEncodable`, and `@JSONCodable` synthesize JSON decode/encode boilerplate for model types, and `@JSON("...")` overrides per-property keys for both decoding and encoding.
+- **JSON Utilities** (`Sources/MongooseKit/JSON/`): Encoding and decoding utilities with configurable bool/nil/object-key strategies for embedded-friendly output. The encoder defaults to insertion-order object keys (with sorted opt-in), uses C-backed floating-point formatting for embedded stability, and retains full Unicode behavior (requires linking `libswiftUnicodeDataTables.a` when Unicode-dependent string operations are used in Embedded Swift builds).
+- **JSON Macros** (`Sources/MongooseKit/Macros/`): `@JSONDecodable`, `@JSONEncodable`, and `@JSONCodable` synthesize JSON decode/encode boilerplate for model types, and `@JSON("...")` overrides per-property keys for both decoding and encoding.
 
 ## Getting Started
 
