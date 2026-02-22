@@ -72,6 +72,22 @@ public struct HTTPRequest {
   public func bodyString() -> String? {
     String(validating: body, as: UTF8.self)
   }
+
+  /// Decodes the request body as JSON into `type` using the embedded JSON decoder.
+  ///
+  /// - Parameters:
+  ///   - type: The `JSONDecodable` type to decode.
+  ///   - decoder: The decoder configuration to apply while decoding.
+  /// - Returns: A decoded value of `type`.
+  /// - Throws: `JSONDecodingError` when decoding fails.
+  /// - Note: This API is designed for Embedded Swift and uses `JSONDecodable`.
+  /// - Warning: This method does not validate the `Content-Type` header.
+  public func decodeJSON<T: JSONDecodable>(
+    _ type: T.Type = T.self,
+    using decoder: JSONDecoder = .init()
+  ) throws(JSONDecodingError) -> T {
+    try decoder.decode(type, from: body)
+  }
 }
 
 extension HTTPRequest {

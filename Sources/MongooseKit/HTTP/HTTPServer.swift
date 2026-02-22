@@ -69,6 +69,121 @@ public final class HTTPServer {
     return self
   }
 
+  /// Registers a route handler that decodes the request body as JSON.
+  ///
+  /// ```swift
+  /// @JSONDecodable
+  /// struct ToggleCommand {
+  ///   let on: Bool
+  /// }
+  ///
+  /// server.on(.post, "/lights/:id") { request, command in
+  ///   let id = request.pathParameters["id"] ?? "unknown"
+  ///   return HTTPResponse(status: .ok, body: "updated \(id): \(command.on)")
+  /// }
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - method: The HTTP method to match.
+  ///   - path: The route pattern, e.g. `/lights/:id`.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - handler: Invoked only when JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: Route registration and path normalization follow `on(_:_:handler:)`.
+  /// - Warning: This helper does not validate `Content-Type`; it always attempts
+  ///   to decode the body as JSON.
+  /// - Note: If decoding fails, a `400 Bad Request` plain-text response is
+  ///   returned and `handler` is not invoked.
+  @discardableResult
+  public func on<T: JSONDecodable>(
+    _ method: HTTPMethod,
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    handler: @escaping (HTTPRequest, T) -> HTTPResponse
+  ) -> Self {
+    on(method, path) { request in
+      guard let decoded = try? request.decodeJSON(T.self, using: decoder) else {
+        return Self.plainTextResponse(status: .badRequest, body: "Bad Request")
+      }
+
+      return handler(request, decoded)
+    }
+  }
+
+  /// Registers a route handler that decodes request JSON and encodes a typed JSON response.
+  ///
+  /// ```swift
+  /// @JSONDecodable
+  /// struct ToggleCommand {
+  ///   let on: Bool
+  /// }
+  ///
+  /// @JSONEncodable
+  /// struct ToggleResult {
+  ///   let id: String
+  ///   let on: Bool
+  /// }
+  ///
+  /// server.on(.post, "/lights/:id") { request, command in
+  ///   let id = request.pathParameters["id"] ?? "unknown"
+  ///   return HTTPJSONResponse(body: ToggleResult(id: id, on: command.on))
+  /// }
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - method: The HTTP method to match.
+  ///   - path: The route pattern, e.g. `/lights/:id`.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - encoder: The JSON encoder configuration to apply to the response body.
+  ///   - handler: Invoked only when request JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: Route registration and path normalization follow `on(_:_:handler:)`.
+  /// - Warning: This helper does not validate `Content-Type`; it always attempts
+  ///   to decode the body as JSON.
+  /// - Note: If request decoding fails, this returns `400 Bad Request` as plain
+  ///   text and does not invoke `handler`.
+  /// - Note: Successful responses are encoded with `HTTPJSONResponse.encode(using:)`,
+  ///   which ensures `Content-Type: application/json` unless already present.
+  /// - Warning: If response encoding fails, this logs the encoding error and
+  ///   returns `500 Internal Server Error` as plain text.
+  @discardableResult
+  public func on<RequestBody: JSONDecodable, ResponseBody: JSONEncodable>(
+    _ method: HTTPMethod,
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    encoder: JSONEncoder = .init(),
+    handler: @escaping (HTTPRequest, RequestBody) -> HTTPJSONResponse<ResponseBody>
+  ) -> Self {
+    let port = self.port
+    return on(method, path, decoder: decoder) { (request: HTTPRequest, decoded: RequestBody) in
+      let jsonResponse = handler(request, decoded)
+
+      do {
+        return try jsonResponse.encode(using: encoder)
+      } catch let error as JSONEncodingError {
+        Self.logJSONEncodingFailure(
+          port: port,
+          request: request,
+          errorDescription: "\(error)"
+        )
+        return Self.plainTextResponse(
+          status: .internalServerError,
+          body: "Internal Server Error"
+        )
+      } catch {
+        Self.logJSONEncodingFailure(
+          port: port,
+          request: request,
+          errorDescription: "\(error)"
+        )
+        return Self.plainTextResponse(
+          status: .internalServerError,
+          body: "Internal Server Error"
+        )
+      }
+    }
+  }
+
   /// Registers a `GET` route.
   @discardableResult
   public func get(_ path: String, handler: @escaping HTTPRouteHandler) -> Self {
@@ -81,16 +196,139 @@ public final class HTTPServer {
     on(.post, path, handler: handler)
   }
 
+  /// Registers a `POST` route that decodes the request body as JSON.
+  ///
+  /// - Parameters:
+  ///   - path: The route pattern.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - handler: Invoked only when JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: On decoding failure this returns a `400 Bad Request` plain-text
+  ///   response and does not invoke `handler`.
+  @discardableResult
+  public func post<T: JSONDecodable>(
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    handler: @escaping (HTTPRequest, T) -> HTTPResponse
+  ) -> Self {
+    on(.post, path, decoder: decoder, handler: handler)
+  }
+
+  /// Registers a `POST` route with JSON request decoding and typed JSON response encoding.
+  ///
+  /// - Parameters:
+  ///   - path: The route pattern.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - encoder: The JSON encoder configuration to apply to the response body.
+  ///   - handler: Invoked only when request JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: On decode failure this returns `400 Bad Request` and skips `handler`.
+  /// - Note: Successful responses ensure `Content-Type: application/json` unless
+  ///   already present.
+  /// - Warning: On response-encoding failure this logs the error and returns
+  ///   `500 Internal Server Error`.
+  @discardableResult
+  public func post<RequestBody: JSONDecodable, ResponseBody: JSONEncodable>(
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    encoder: JSONEncoder = .init(),
+    handler: @escaping (HTTPRequest, RequestBody) -> HTTPJSONResponse<ResponseBody>
+  ) -> Self {
+    on(.post, path, decoder: decoder, encoder: encoder, handler: handler)
+  }
+
   /// Registers a `PUT` route.
   @discardableResult
   public func put(_ path: String, handler: @escaping HTTPRouteHandler) -> Self {
     on(.put, path, handler: handler)
   }
 
+  /// Registers a `PUT` route that decodes the request body as JSON.
+  ///
+  /// - Parameters:
+  ///   - path: The route pattern.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - handler: Invoked only when JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: On decoding failure this returns a `400 Bad Request` plain-text
+  ///   response and does not invoke `handler`.
+  @discardableResult
+  public func put<T: JSONDecodable>(
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    handler: @escaping (HTTPRequest, T) -> HTTPResponse
+  ) -> Self {
+    on(.put, path, decoder: decoder, handler: handler)
+  }
+
+  /// Registers a `PUT` route with JSON request decoding and typed JSON response encoding.
+  ///
+  /// - Parameters:
+  ///   - path: The route pattern.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - encoder: The JSON encoder configuration to apply to the response body.
+  ///   - handler: Invoked only when request JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: On decode failure this returns `400 Bad Request` and skips `handler`.
+  /// - Note: Successful responses ensure `Content-Type: application/json` unless
+  ///   already present.
+  /// - Warning: On response-encoding failure this logs the error and returns
+  ///   `500 Internal Server Error`.
+  @discardableResult
+  public func put<RequestBody: JSONDecodable, ResponseBody: JSONEncodable>(
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    encoder: JSONEncoder = .init(),
+    handler: @escaping (HTTPRequest, RequestBody) -> HTTPJSONResponse<ResponseBody>
+  ) -> Self {
+    on(.put, path, decoder: decoder, encoder: encoder, handler: handler)
+  }
+
   /// Registers a `PATCH` route.
   @discardableResult
   public func patch(_ path: String, handler: @escaping HTTPRouteHandler) -> Self {
     on(.patch, path, handler: handler)
+  }
+
+  /// Registers a `PATCH` route that decodes the request body as JSON.
+  ///
+  /// - Parameters:
+  ///   - path: The route pattern.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - handler: Invoked only when JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: On decoding failure this returns a `400 Bad Request` plain-text
+  ///   response and does not invoke `handler`.
+  @discardableResult
+  public func patch<T: JSONDecodable>(
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    handler: @escaping (HTTPRequest, T) -> HTTPResponse
+  ) -> Self {
+    on(.patch, path, decoder: decoder, handler: handler)
+  }
+
+  /// Registers a `PATCH` route with JSON request decoding and typed JSON response encoding.
+  ///
+  /// - Parameters:
+  ///   - path: The route pattern.
+  ///   - decoder: The JSON decoder configuration to apply to the request body.
+  ///   - encoder: The JSON encoder configuration to apply to the response body.
+  ///   - handler: Invoked only when request JSON decoding succeeds.
+  /// - Returns: `self` to support call chaining.
+  /// - Note: On decode failure this returns `400 Bad Request` and skips `handler`.
+  /// - Note: Successful responses ensure `Content-Type: application/json` unless
+  ///   already present.
+  /// - Warning: On response-encoding failure this logs the error and returns
+  ///   `500 Internal Server Error`.
+  @discardableResult
+  public func patch<RequestBody: JSONDecodable, ResponseBody: JSONEncodable>(
+    _ path: String,
+    decoder: JSONDecoder = .init(),
+    encoder: JSONEncoder = .init(),
+    handler: @escaping (HTTPRequest, RequestBody) -> HTTPJSONResponse<ResponseBody>
+  ) -> Self {
+    on(.patch, path, decoder: decoder, encoder: encoder, handler: handler)
   }
 
   /// Registers a `DELETE` route.
@@ -489,6 +727,16 @@ extension HTTPServer {
       status: status,
       headers: [.init("Content-Type", value: "text/plain")],
       body: body
+    )
+  }
+
+  private static func logJSONEncodingFailure(
+    port: UInt16,
+    request: HTTPRequest,
+    errorDescription: String
+  ) {
+    print(
+      "[HTTPServer:\(port)] response JSON encoding failure method=\(request.method.rawValue) path=\(request.path) error=\(errorDescription)"
     )
   }
 
