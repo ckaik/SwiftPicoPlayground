@@ -167,7 +167,7 @@ LLVM_AR="${TOOLCHAIN_PATH}/usr/bin/llvm-ar"
 if [ -d "$SWIFT_EMBEDDED_LIBS_DIR" ] && [ -f "$LIBAPP_PATH" ] && [ -x "$LLVM_AR" ]; then
     MERGE_TMPDIR=$(mktemp -d)
     trap "rm -rf '$MERGE_TMPDIR'" EXIT
-    for lib in libswiftUnicodeDataTables.a; do
+    for lib in libswiftUnicodeDataTables.a libswift_Concurrency.a libswift_ConcurrencyDefaultExecutor.a; do
         [ -f "$SWIFT_EMBEDDED_LIBS_DIR/$lib" ] || continue
         LIBDIR="$MERGE_TMPDIR/${lib%.a}"
         mkdir -p "$LIBDIR"
